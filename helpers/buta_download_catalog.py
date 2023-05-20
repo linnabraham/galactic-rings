@@ -60,4 +60,4 @@ if __name__=="__main__":
     filePath="data/catalogs/buta_2017_table2.dat"
     catalog = read_catalog(filePath)
     df = get_ra_dec_deg(catalog)
-    df.to_csv("data/catalogs/buta_2017_with_ra_dec.csv",index=False)
+    df.to_csv("data/catalogs/buta_2017_with_ra_dec.csv", index=True, index_label='Index')

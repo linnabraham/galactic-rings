@@ -1,8 +1,8 @@
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-images', default="raw_train/E1", help="path containing images of two classes")
-parser.add_argument('-traindata', default="train_data/base", help="path containing train validation and test directories")
+parser.add_argument('-images', default="data/images_train/E2", help="path containing images of two classes")
+parser.add_argument('-traindata', default="data/train_data/base", help="path containing train validation and test directories")
 parser.add_argument('-targetsize', default=(240,240), help="target size to resize images to before training")
 parser.add_argument('-epochs', default=50, help="num epochs")
 parser.add_argument('-batchsize', default=16, help="batch size for training")

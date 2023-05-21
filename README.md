@@ -2,7 +2,10 @@
 
 ## Setup the environment
 This project works best with python 3.7 and tensorflow 1.15
-```pip install -r requirements.txt```
+
+```
+pip install -r requirements.txti
+```
 
 ## Download the data
 ```python download_data.py```

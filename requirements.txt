@@ -15,7 +15,8 @@ scikit-image
 # development
 ipykernel
 opencv-python
-# catalogue download
+# data download
 docopt
 fundamentals
 tqdm
+gdown

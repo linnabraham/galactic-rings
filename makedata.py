@@ -123,6 +123,9 @@ def make_nonrings(ntest, traindata_path, images_path,  train_frac, val_frac, ran
     return train_samples, val_samples, test_samples
 
 if __name__=="__main__":
+    parser.add_argument('-noaugment', action="store_false", help="switch to augment images for training")
+    parser.add_argument('-augscript', default='../augment_sample.py', help="path of augmentation script")
+    parser.add_argument('-step', default=90, help="step size for rotating images")
 
     args = parser.parse_args()
     print("Using the following parameters", args)

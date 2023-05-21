@@ -25,17 +25,29 @@ def predict_image(model, input_path, args):
         # Read the CSV file and extract the image paths
         image_paths = read_csv_file(input_path)
 
-        # Process each image path and make predictions
-        for image_path in image_paths:
-            predict_single_image(model, input_path, args)
+        # Define the output file path
+        output_file = 'predictions.csv'
+
+        # Write the predictions to the CSV file
+        with open(output_file, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['Image Path','Prediction'])  # Write the header
+
+            # Process each image path and make predictions
+            for image_path in image_paths:
+                prediction = predict_single_image(model, image_path, args)
+                writer.writerow([image_path,prediction])
+
     else:
         # Assume the input path is a single image file
-        predict_single_image(model, input_path, args)
+        prediction = predict_single_image(model, input_path, args)
+        
+        print(f"Predictions:\n{prediction}")
 
 def predict_single_image(model, image_path, args):
     img_array = get_image_array(img_path=image_path, target_size=args.targetsize)
     predictions = model.predict(img_array)
-    print(f"Predictions:\n{predictions}")
+    return predictions
 
 if __name__=="__main__":
 

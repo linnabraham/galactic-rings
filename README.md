@@ -4,7 +4,7 @@
 This project works best with python 3.7 and tensorflow 1.15
 
 ```
-pip install -r requirements.txti
+pip install -r requirements.txt
 ```
 
 ## Download the data

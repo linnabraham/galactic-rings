@@ -58,5 +58,9 @@ if __name__=="__main__":
 
     # Load the pre-trained model
     model = load_model(args.modelpath)
+    config = model.get_config() # Returns pretty much every information about your model
+    print("Expected input shape for the model")
+    print(config["layers"][0]["config"]["batch_input_shape"]) # returns a tuple of width, height and channels
+
 
     predict_image(model, args.inputs, args)

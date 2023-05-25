@@ -25,7 +25,7 @@ The non-rings class is not augmented.
 
 ## Run the training
 
-`python train_alexnet.py -images data/images_train/E2/ -traindata data/train_data/base/ -runtrain -epochs 1 -batchsize 64`
+`python train_alexnet.py -traindata data/train_data/base/ -epochs 1 -batchsize 64`
 
 The training script saves the outputs generated during training to a folder `outputs`
 

@@ -123,4 +123,4 @@ if __name__=="__main__":
 
     ntrain, nval = make_rings(AUGSCRIPT, STEP, aug, traindata_path, images_path,  train_frac, random_state, label='Rings')
 
-    make_nonrings(nval, traindata_path, images_path,  train_frac, random_state, label='NonRings' )
+    make_nonrings(nval, traindata_path, images_path, random_state, label='NonRings' )

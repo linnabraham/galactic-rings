@@ -62,6 +62,13 @@ if __name__=="__main__":
     predictions = model.predict(rescaled_imgs)
     print(predictions)
 
+    # save prediction probabilities to disk
+    filenames = images_array.reshape(-1,1)
+    stack = np.hstack([filenames, predictions])
+    header = "filenames, " + ", ".join(["NonRings","Rings"])
+    savepath =f"output/probabilities_{os.getpid()}.csv"
+    np.savetxt(savepath,stack,delimiter=',',fmt='%s',header = header)
+
     # Convert the predicted probabilities to class labels
     predicted_labels = np.argmax(predictions, axis=1)
 

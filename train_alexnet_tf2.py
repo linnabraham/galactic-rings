@@ -1,5 +1,6 @@
 import os
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import load_model
 import time
 import pandas as pd
 from alexnet_utils.params import parser
@@ -56,6 +57,10 @@ def save_filelists(train_generator, validation_generator, pid, outdir):
     results=pd.DataFrame({"Filename":filenames})
     results.to_csv(os.path.sep.join([outdir,f"{pid}_validation_filenames.csv"]),index=False)
 
+def load_saved_model(modelpath):
+    # Load the pre-trained model
+    model = load_model(modelpath)
+    return model
 
 def train_model(train_generator, validation_generator, TARGET_SIZE, CHANNELS, NUM_CLASSES, EPOCHS, args):
 
@@ -63,17 +68,21 @@ def train_model(train_generator, validation_generator, TARGET_SIZE, CHANNELS, NU
     save_filelists(train_generator, validation_generator, pid, outdir)
     callbacks = create_callbacks(pid, outdir)
 
-    # initialize the optimizer
-    opt = Adam(lr=1e-3)
-    model = AlexNet.build(width=TARGET_SIZE[0], height=TARGET_SIZE[1], depth=CHANNELS, classes=NUM_CLASSES, reg=0.0002)
-
-    print("[INFO] compiling model...")
-    model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
-
-    # calculate the train and validation steps to be passed on to the generator
+    # compute the train and validation steps to be passed on to the generator
     train_steps = int(train_generator.samples/train_generator.batch_size)
     validation_steps = int(validation_generator.samples/validation_generator.batch_size)
     print("steps_per_epoch:","\ntraining:",train_steps,"\nvalidation:",validation_steps)
+
+    if args.modelpath is not None:
+        model = load_saved_model(args.modelpath)
+
+    else:
+        # initialize the optimizer
+        opt = Adam(lr=1e-3)
+        model = AlexNet.build(width=TARGET_SIZE[0], height=TARGET_SIZE[1], depth=CHANNELS, classes=NUM_CLASSES, reg=0.0002)
+
+        print("[INFO] compiling model...")
+        model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
     #Fit the model using a batch generator
     history = model.fit_generator(train_generator, callbacks=callbacks, verbose=1, steps_per_epoch=train_steps, epochs=EPOCHS, validation_data=validation_generator, validation_steps=validation_steps)

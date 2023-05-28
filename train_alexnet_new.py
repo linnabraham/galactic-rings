@@ -24,7 +24,7 @@ train_ds = tf.keras.utils.image_dataset_from_directory(
   batch_size=batch_size)
 
 normalization_layer = layers.Rescaling(1./255)
-train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
+train_ds.map(lambda x, y: (normalization_layer(x), y))
 
 val_ds = tf.keras.utils.image_dataset_from_directory(
   data_dir,
@@ -36,7 +36,7 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
   batch_size=batch_size)
 
 normalization_layer = layers.Rescaling(1./255)
-val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y))
+val_ds.map(lambda x, y: (normalization_layer(x), y))
 
 
 class_names = train_ds.class_names

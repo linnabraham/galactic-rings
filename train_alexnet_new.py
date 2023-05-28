@@ -1,6 +1,7 @@
 import pathlib
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
+from tensorflow.keras import layers
 import sys
 import json
 
@@ -22,6 +23,9 @@ train_ds = tf.keras.utils.image_dataset_from_directory(
   image_size=(img_height, img_width),
   batch_size=batch_size)
 
+normalization_layer = layers.Rescaling(1./255)
+train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
+
 val_ds = tf.keras.utils.image_dataset_from_directory(
   data_dir,
   validation_split=0.3,
@@ -30,6 +34,11 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
   seed=123,
   image_size=(img_height, img_width),
   batch_size=batch_size)
+
+normalization_layer = layers.Rescaling(1./255)
+val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y))
+
+
 class_names = train_ds.class_names
 print(class_names)
 

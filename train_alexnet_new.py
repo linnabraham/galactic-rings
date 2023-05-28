@@ -2,13 +2,14 @@ import pathlib
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
 import sys
+import json
 
 batch_size = 16
 img_height = 240
 img_width = 240
 
 
-data_dir = './data/E2/'
+data_dir = './data/images_train/E5/'
 data_dir = pathlib.Path(data_dir)
 print(data_dir)
 

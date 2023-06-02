@@ -31,7 +31,20 @@ The training script saves the outputs generated during training to a folder `out
 
 Each training session creates a different subfolder based on the process id 
 
-## Predict
+## Evaluate the performance of the trained model on validation or test data
+
+`python evaluate_alexnet.py  -test_dir "data/train_data/base/validation/" -model_path output/741649/741649.h5`
+
+The prediction results are saved to a file eval_output.csv
+
+## Predict on a large number of unlabelled images
+
+python predict_alexnet.py -pred_dir data/Panstarrs/dummy -model_path output/741649/741649.h5 -batch_size 64
+
+The predictions are saved to a file called pred_output.csv
+
+
+### Predict single 
 
 ```python predict_single.py -model_path output/263861/263861.h5 -inputs nair_common_withpredict.csv```
 
@@ -44,4 +57,5 @@ find path/to/images/ -type f > images_for_prediction.csv
 The predictions are saved to a file called `predictions.csv` 
 
 The prediction script can also predict on single images by giving an image path instead of a csv path.
+
 

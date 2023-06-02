@@ -18,12 +18,12 @@ def read_images(image_paths):
 if __name__=="__main__":
 
     from alexnet_utils.params import parser
-    parser.add_argument('-modelpath',  help="path containing pre-trained model")
+    parser.add_argument('-model_path',  help="path containing pre-trained model")
     parser.add_argument('-inputs',  help="path of image or csv file for prediction")
     args = parser.parse_args()
 
     # Load the pre-trained model
-    model = load_model(args.modelpath)
+    model = load_model(args.model_path)
     config = model.get_config() # Returns pretty much every information about your model
     print("Expected input shape for the model")
     print(config["layers"][0]["config"]["batch_input_shape"]) # returns a tuple of width, height and channels

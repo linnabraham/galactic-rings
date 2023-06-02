@@ -107,19 +107,19 @@ def make_nonrings(nval, traindata_path, images_path, random_state, label='NonRin
 
 if __name__=="__main__":
     parser.add_argument('-noaugment', action="store_false", help="switch to augment images for training")
-    parser.add_argument('-augscript', default='helpers/augment_sample.py', help="path of augmentation script")
-    parser.add_argument('-step', default=90, help="step size for rotating images")
+    parser.add_argument('-aug_script', default='helpers/augment_sample.py', help="path of augmentation script")
+    parser.add_argument('-step', type=int, default=90, help="step size for rotating images")
 
     args = parser.parse_args()
     print("Using the following parameters", args)
 
     images_path = args.images
-    traindata_path = args.traindata
-    train_frac = args.trainfrac
-    random_state = args.randomstate
+    traindata_path = args.train_data
+    train_frac = args.train_frac
+    random_state = args.random_state
     aug = args.noaugment # noaugment has default value of True
-    AUGSCRIPT = args.augscript
-    STEP = int(args.step)
+    AUGSCRIPT = args.aug_script
+    STEP = args.step
 
     ntrain, nval = make_rings(AUGSCRIPT, STEP, aug, traindata_path, images_path,  train_frac, random_state, label='Rings')
 

@@ -10,7 +10,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint, Callback
 
     # create generators for loading the training and validation data
 def create_data_gen(TARGET_SIZE, COLOR_MODE, BATCH_SIZE, args):
-    base_dir = args.traindata
+    base_dir = args.train_data
     train_dir = os.path.join(base_dir, 'train')
     validation_dir = os.path.join(base_dir, 'validation')
 
@@ -87,12 +87,12 @@ if __name__=="__main__":
     print("Using the following parameters", args)
 
     CHANNELS = args.channels
-    NUM_CLASSES = args.numclasses
+    NUM_CLASSES = args.num_classes
     color_dict = {1:'grayscale',3:'rgb'}
-    COLOR_MODE = color_dict[args.channels]
-    TARGET_SIZE = args.targetsize
-    EPOCHS = int(args.epochs)
-    BATCH_SIZE = int(args.batchsize)
+    COLOR_MODE = color_dict[CHANNELS]
+    TARGET_SIZE = args.target_size
+    EPOCHS = args.epochs
+    BATCH_SIZE = args.batch_size
 
     train_generator, validation_generator = create_data_gen(TARGET_SIZE, COLOR_MODE, BATCH_SIZE, args)
 

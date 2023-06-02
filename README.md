@@ -1,7 +1,8 @@
 # How to use this repo
 
 ## Setup the environment
-This project works best with python 3.7 and tensorflow 1.15
+~~This project works best with python 3.7 and tensorflow 1.15~~
+Project works with a python 3.10 and tensorflow 2.12 environment
 
 ```
 pip install -r requirements.txt

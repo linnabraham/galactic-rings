@@ -1,4 +1,3 @@
-
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.layers import Conv2D
@@ -71,9 +70,9 @@ class AlexNet:
 		model.add(BatchNormalization())
 		model.add(Dropout(0.5))
 
-		# softmax classifier
+		# sigmoid classifier
 		model.add(Dense(classes, kernel_regularizer=l2(reg)))
-		model.add(Activation("softmax"))
+		model.add(Activation("sigmoid"))
 
 		# return the constructed network architecture
 		return model

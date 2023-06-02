@@ -1,30 +1,32 @@
 import os
-from keras.preprocessing.image import ImageDataGenerator
 import time
+import json
 import pandas as pd
-from alexnet_utils.params import parser
-from keras.optimizers import Adam
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+from tensorflow.keras import layers
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, Callback
+from alexnet_utils.params import parser, print_arguments
 from alexnet_utils.alexnet import AlexNet
-from alexnet_utils.trainingmonitor import TrainingMonitor
-from keras.callbacks import EarlyStopping, ModelCheckpoint, Callback
 
-    # create generators for loading the training and validation data
-def create_data_gen(TARGET_SIZE, COLOR_MODE, BATCH_SIZE, args):
-    base_dir = args.train_data
-    train_dir = os.path.join(base_dir, 'train')
-    validation_dir = os.path.join(base_dir, 'validation')
+class SaveHistoryCallback(Callback):
+    def __init__(self, file_path):
+        super().__init__()
+        self.file_path = file_path
+        self.history = {'loss': [], 'accuracy': [], 'val_loss': [], 'val_accuracy': []}
 
-    # define the preprocessing
-    aug = ImageDataGenerator(rescale=1./255)
-    print("[INFO] Creating the train generator")
-    #save_to_dir = '../data/augmented/',
-    train_generator = aug.flow_from_directory(train_dir, target_size=TARGET_SIZE, color_mode=COLOR_MODE, class_mode='categorical', shuffle=True, batch_size=BATCH_SIZE)
+    def on_epoch_end(self, epoch, logs=None):
+        self.history['loss'].append(logs.get('loss'))
+        self.history['accuracy'].append(logs.get('accuracy'))
+        self.history['val_loss'].append(logs.get('val_loss'))
+        self.history['val_accuracy'].append(logs.get('val_accuracy'))
 
-    print("[INFO] Creating the validation generator")
-    validation_generator = aug.flow_from_directory(validation_dir, target_size=TARGET_SIZE, color_mode=COLOR_MODE, class_mode='categorical', shuffle=True, batch_size=BATCH_SIZE)
-    return train_generator, validation_generator
+        with open(self.file_path, 'w') as f:
+            json.dump(self.history, f)
 
-    # create an output directory to hold saved model, training graphs etc.
+
+# create an output directory to hold saved model, training graphs etc.
 def make_output_dir(output):
     # create a separate output directory for each run
     pid = os.getpid()
@@ -33,69 +35,103 @@ def make_output_dir(output):
     os.makedirs(outdir)
     return pid, outdir
 
-    # construct the set of callbacks
-def create_callbacks(pid, outdir):
-    jsonPath = os.path.sep.join([outdir, "{}.json".format(pid)])
-    modelPath = os.path.sep.join([outdir, "{}.h5".format(pid)])
-
-    callbacks = [TrainingMonitor(jsonPath),
-    #EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='auto'),
-        ModelCheckpoint(filepath=modelPath, monitor='val_loss', save_best_only=True)]
-    return callbacks
-
-    # save a list of filenames used for training and validation
-def save_filelists(train_generator, validation_generator, pid, outdir):
-
-    print(f"Saving filenames used for training and validation to csv")
-
-    filenames=train_generator.filenames
-    results=pd.DataFrame({"Filename":filenames})
-    results.to_csv(os.path.sep.join([outdir,f"{pid}_train_filenames.csv"]),index=False)
-
-    filenames=validation_generator.filenames
-    results=pd.DataFrame({"Filename":filenames})
-    results.to_csv(os.path.sep.join([outdir,f"{pid}_validation_filenames.csv"]),index=False)
-
-
-def train_model(train_generator, validation_generator, TARGET_SIZE, CHANNELS, NUM_CLASSES, EPOCHS, args):
-    
-    pid, outdir = make_output_dir(args.output)
-    save_filelists(train_generator, validation_generator, pid, outdir)
-    callbacks = create_callbacks(pid, outdir)
-
-    # initialize the optimizer
-    opt = Adam(lr=1e-3)
-    model = AlexNet.build(width=TARGET_SIZE[0], height=TARGET_SIZE[1], depth=CHANNELS, classes=NUM_CLASSES, reg=0.0002)
-
-    print("[INFO] compiling model...")
-    model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
-
-    # calculate the train and validation steps to be passed on to the generator
-    train_steps = int(train_generator.samples/train_generator.batch_size)
-    validation_steps = int(validation_generator.samples/validation_generator.batch_size)
-    print("steps_per_epoch:","\ntraining:",train_steps,"\nvalidation:",validation_steps)
-
-    #Fit the model using a batch generator
-    history = model.fit_generator(train_generator, callbacks=callbacks, verbose=1, steps_per_epoch=train_steps, epochs=EPOCHS, validation_data=validation_generator, validation_steps=validation_steps)
-
-    return history
-
-
 if __name__=="__main__":
 
     args = parser.parse_args()
-    print("Using the following parameters", args)
+    print_arguments(parser,args)
 
-    CHANNELS = args.channels
-    NUM_CLASSES = args.num_classes
-    color_dict = {1:'grayscale',3:'rgb'}
-    COLOR_MODE = color_dict[CHANNELS]
-    TARGET_SIZE = args.target_size
-    EPOCHS = args.epochs
-    BATCH_SIZE = args.batch_size
+    data_dir = args.images
+    target_size = args.target_size
+    batch_size = args.batch_size
+    train_frac = args.train_frac
+    random_state = args.random_state
+    num_classes = args.num_classes
+    channels = args.channels
+    output = args.output_dir
+    epochs = args.epochs
 
-    train_generator, validation_generator = create_data_gen(TARGET_SIZE, COLOR_MODE, BATCH_SIZE, args)
+    # set the color_mode from the number of channels
+
+    #color_dict = {1:'grayscale',3:'rgb'}
+    #color_mode = color_dict[channels]
+
+    train_ds, val_ds = tf.keras.utils.image_dataset_from_directory(
+      data_dir,
+      validation_split=1-train_frac,
+      subset="both",
+      color_mode='rgb',
+      seed=random_state,
+      image_size=target_size,
+      batch_size=batch_size)
+
+    class_names = train_ds.class_names
+
+    print("Training dataset class names are :",class_names)
+
+    pid, outdir = make_output_dir(output)
+
+    print(f"Saving filenames used for training and validation to disk...")
+
+    filenames = train_ds.file_paths
+    results=pd.DataFrame({"Filename":filenames})
+    results.to_csv(os.path.join(outdir,f"{pid}_train_filenames.csv"),index=False)
+
+    filenames = val_ds.file_paths
+    results=pd.DataFrame({"Filename":filenames})
+    results.to_csv(os.path.join(outdir,f"{pid}_validation_filenames.csv"),index=False)
+ 
+
+    # set the num_classes automatically from the number of directories found 
+    # by the data generator
+    #num_classes = len(class_names)
+
+    normalization_layer = layers.Rescaling(1./255)
+    train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
+
+    val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y))
+    AUTOTUNE = tf.data.AUTOTUNE
+
+    train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
+    val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+
+    # define callbacks
+    mc = ModelCheckpoint('best_model.h5', monitor='val_loss', \
+            mode='min', verbose=1, save_best_only=True)
+
+    es = EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='auto')
+
+    history_path = os.path.join(outdir,'history.json')
+    history_callback = SaveHistoryCallback(history_path)
+
+    classification_threshold = 0.5
+
+    METRICS = [
+          tf.keras.metrics.Precision(thresholds=classification_threshold,
+                                     name='precision'),
+          tf.keras.metrics.Recall(thresholds=classification_threshold,
+                                  name="recall"),
+          tf.keras.metrics.AUC(num_thresholds=100, curve='PR', name='auc_pr'),
+    ]
+
+    existing_modelpath = 'best_model.h5'
+
+    if os.path.exists(existing_modelpath):
+        print("[INFO] Loading existing model from disk ..")
+        model = load_model(existing_modelpath)
+    else:
+
+        opt = Adam(learning_rate=1e-3)
+        model = AlexNet.build(width=target_size[0], height=target_size[1], depth=channels, classes=1, reg=0.0002)
+
+
+        print("[INFO] compiling model...")
+        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=METRICS)
 
     start = time.time()
-    history = train_model(train_generator, validation_generator, TARGET_SIZE, CHANNELS, NUM_CLASSES, EPOCHS, args)
+
+    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, \
+            callbacks=[mc,
+            #es
+            history_callback])
+
     print("Total time taken for training: %d seconds" % (time.time()-start))

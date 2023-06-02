@@ -25,7 +25,7 @@ The non-rings class is not augmented.
 
 ## Run the training
 
-`python train_alexnet.py -traindata data/train_data/base/ -epochs 1 -batchsize 64`
+`python train_alexnet.py -train_data data/train_data/base/ -epochs 1 -batch_size 64`
 
 The training script saves the outputs generated during training to a folder `outputs`
 
@@ -33,7 +33,7 @@ Each training session creates a different subfolder based on the process id
 
 ## Predict
 
-```python predict_single.py -modelpath output/263861/263861.h5 -inputs nair_common_withpredict.csv```
+```python predict_single.py -model_path output/263861/263861.h5 -inputs nair_common_withpredict.csv```
 
 Create a csv file containing just the filepaths of images for predictions using
 

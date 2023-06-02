@@ -2,6 +2,7 @@
 
 ## Setup the environment
 ~~This project works best with python 3.7 and tensorflow 1.15~~
+
 Project works with a python 3.10 and tensorflow 2.12 environment
 
 ```
@@ -40,7 +41,7 @@ The prediction results are saved to a file eval_output.csv
 
 ## Predict on a large number of unlabelled images
 
-python predict_alexnet.py -pred_dir data/Panstarrs/dummy -model_path output/741649/741649.h5 -batch_size 64
+`python predict_alexnet.py -pred_dir data/Panstarrs/dummy -model_path output/741649/741649.h5 -batch_size 64`
 
 The predictions are saved to a file called pred_output.csv
 

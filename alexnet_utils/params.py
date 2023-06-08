@@ -22,8 +22,7 @@ def print_arguments(parser, args):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-images', default="data/images_train/E2", help="path containing images of two classes")
-parser.add_argument('-train_data', default="data/train_data/base", help="path containing train validation and test directories")
+parser.add_argument('-images',  help="path containing images of two classes")
 parser.add_argument('-target_size', type=tuple_type, default=(240,240), help="target size to resize images to before training")
 parser.add_argument('-epochs', type=int, default=50, help="num epochs")
 parser.add_argument('-batch_size', type=int, default=16, help="batch size for training")

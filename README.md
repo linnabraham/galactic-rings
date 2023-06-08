@@ -16,17 +16,19 @@ data downloads as a zip file by default inside `data/images_train`
 
 unzip the file and place it in a folder inside the `images_train` folder
 
-## Run the training
+## Train AlexNet
 
 `python train_alexnet.py -images data/images_train/E2 `
-
-or
-
-` python train_lenet.py -images data/images_train/E2/`
 
 The training script saves the outputs generated during training to a folder `outputs`
 
 Each training session creates a different subfolder based on the process id 
+
+## Train LeNet
+
+` python train_lenet.py -images data/images_train/E2/`
+
+The LeNet training script includes `augmentations`. These are on-the-fly augmentations done using tf.Image class. Current augmentations include (RandomFlips=(Horizontal and Vertical), Integral rotations by 90 deg)
 
 ## Evaluate the performance of the trained model on validation or test data
 

@@ -32,14 +32,14 @@ class SaveHistoryCallback(Callback):
     def __init__(self, file_path):
         super().__init__()
         self.file_path = file_path
-        self.history = {'loss': [], 'accuracy': [], 'val_loss': [], 'val_accuracy': []}
+        self.history = {'loss': [], 'auc_pr': [], 'val_loss': [], 'val_auc_pr': []}
 
     def on_epoch_end(self, epoch, logs=None):
         self.history['loss'].append(logs.get('loss'))
-        self.history['accuracy'].append(logs.get('accuracy'))
+        self.history['auc_pr'].append(logs.get('auc_pr'))
         self.history['val_loss'].append(logs.get('val_loss'))
-        self.history['val_accuracy'].append(logs.get('val_accuracy'))
-
+        self.history['val_auc_pr'].append(logs.get('val_auc_pr'))
+        
         with open(self.file_path, 'w') as f:
             json.dump(self.history, f)
 

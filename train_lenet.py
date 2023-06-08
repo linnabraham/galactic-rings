@@ -8,6 +8,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, Callback
 from alexnet_utils.params import parser, print_arguments
 import json
+import pandas as pd
 
 def create_lenet(target_size, channels):
 
@@ -116,6 +117,17 @@ if __name__=="__main__":
       seed=random_state,
       image_size=target_size,
       batch_size=batch_size)
+
+    # save filenames used for training and validation to disk
+    print(f"Saving filenames used for training and validation to disk...")
+
+    filenames = train_ds.file_paths
+    results=pd.DataFrame({"Filename":filenames})
+    results.to_csv(os.path.join(outdir,f"{pid}_train_filenames.csv"),index=False)
+
+    filenames = val_ds.file_paths
+    results=pd.DataFrame({"Filename":filenames})
+    results.to_csv(os.path.join(outdir,f"{pid}_validation_filenames.csv"),index=False)
 
     normalization_layer = layers.Rescaling(1./255)
 

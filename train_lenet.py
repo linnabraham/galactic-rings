@@ -9,29 +9,23 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, Callback
 from alexnet_utils.params import parser, print_arguments
 import json
 
-input_shape = (240, 240, 3)
+def create_lenet(target_size, channels):
 
-model = Sequential()
-model.add(layers.Conv2D(filters=6, kernel_size=(10,10), activation='relu',input_shape=input_shape))
-model.add(layers.AveragePooling2D(pool_size=(4,4)))
+    input_shape = (target_size[0], target_size[1], channels)
 
-model.add(layers.Conv2D(filters=16, kernel_size=(3,3), activation='relu'))
-model.add(layers.AveragePooling2D())
+    model = Sequential()
+    model.add(layers.Conv2D(filters=6, kernel_size=(10,10), activation='relu',input_shape=input_shape))
+    model.add(layers.AveragePooling2D(pool_size=(4,4)))
 
-model.add(layers.Flatten())
-model.add(layers.Dense(units=120, activation='relu'))
-model.add(layers.Dense(units=84, activation='relu'))
-model.add(layers.Dense(units=1, activation='sigmoid'))
+    model.add(layers.Conv2D(filters=16, kernel_size=(3,3), activation='relu'))
+    model.add(layers.AveragePooling2D())
 
-classification_threshold = 0.5
+    model.add(layers.Flatten())
+    model.add(layers.Dense(units=120, activation='relu'))
+    model.add(layers.Dense(units=84, activation='relu'))
+    model.add(layers.Dense(units=1, activation='sigmoid'))
+    return model
 
-METRICS = [
-          tf.keras.metrics.Precision(thresholds=classification_threshold,
-                                     name='precision'),
-          tf.keras.metrics.Recall(thresholds=classification_threshold,
-                                  name="recall"),
-          tf.keras.metrics.AUC(num_thresholds=100, curve='PR', name='auc_pr'),
-    ]
 
 class SaveHistoryCallback(Callback):
     def __init__(self, file_path):
@@ -98,9 +92,9 @@ if __name__=="__main__":
     random_state = args.random_state
     epochs = args.epochs
     batch_size = args.batch_size
-    args.target_size = (240,240)
     target_size = args.target_size
     output = args.output_dir
+    channels = args.channels
     print_arguments(parser,args)
 
 
@@ -138,6 +132,16 @@ if __name__=="__main__":
         print("[INFO] Loading existing model from disk ..")
         model = load_model(existing_modelpath)
     else:
+        classification_threshold = 0.5
+
+        METRICS = [
+                  tf.keras.metrics.Precision(thresholds=classification_threshold,
+                                             name='precision'),
+                  tf.keras.metrics.Recall(thresholds=classification_threshold,
+                                          name="recall"),
+                  tf.keras.metrics.AUC(num_thresholds=100, curve='PR', name='auc_pr'),
+            ]
+        model = create_lenet(target_size, channels)
         model.compile(loss=keras.losses.binary_crossentropy, optimizer=keras.optimizers.Adam(), metrics=METRICS)
 
     start = time()

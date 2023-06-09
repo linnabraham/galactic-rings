@@ -8,6 +8,7 @@ if __name__=="__main__":
     from alexnet_utils.params import parser
     parser.add_argument('-model_path',  help="Path of pre-trained model")
     parser.add_argument('-test_dir',  help="Directory containing validation or test images sorted into respective classes")
+    parser.add_argument('-write', action="store_true", help="Switch to enable writing results to disk")
     args = parser.parse_args()
 
     model_path = args.model_path
@@ -60,8 +61,8 @@ if __name__=="__main__":
     threshold = 0.5
     print("Using a classification threshold", threshold)
 
-    #predicted_labels = [1 if pred >= threshold else 0 for pred in predictions[:,-1]] 
-    predicted_labels = np.argmax(predictions, axis=1)
+    #predicted_labels = np.argmax(predictions, axis=1)
+    predicted_labels = [1 if pred >= threshold else 0 for pred in predictions] 
 
     # Compute the confusion matrix
     from sklearn.metrics import confusion_matrix
@@ -77,7 +78,7 @@ if __name__=="__main__":
     precision = precision_score(ground_truth, predicted_labels)
     recall = recall_score(ground_truth, predicted_labels)
     f1 = f1_score(ground_truth, predicted_labels)
-    roc_auc = roc_auc_score(ground_truth, predictions[:,-1])
+    roc_auc = roc_auc_score(ground_truth, predictions)
 
     print("Accuracy:", accuracy)
     print("Precision:", precision)
@@ -85,32 +86,36 @@ if __name__=="__main__":
     print("F1-score:", f1)
     print("ROC AUC Score:", roc_auc)
 
-    import csv
-
-    # Example label dictionary for decoding
-    label_dict = {0: "NonRings", 1: "Rings"}
-
-    # Decode predicted labels from indices to text labels
-    decoded_labels = [label_dict[np.argmax(pred)] for pred in predictions]
-
-    # Combine filename, second column of numpy array, and predicted labels
-    rows = [[filename, pred[1], label] for filename, pred, label in zip(filenames, predictions, decoded_labels)]
-
-    # Save rows to a CSV file
-    csv_filename = "eval_output.csv"
-
-    with open(csv_filename, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["Filename", "Prediction", "Label"])  # Write header row
-        writer.writerows(rows)
-
-    false_pos_rate, true_pos_rate, proba = roc_curve(ground_truth, predictions[:, -1])
+   # Automatically compute a classification threshold using the ROC in order to maximize the evaluation metrics
+    false_pos_rate, true_pos_rate, proba = roc_curve(ground_truth, predictions)
     optimal_proba_cutoff = sorted(list(zip(np.abs(true_pos_rate - false_pos_rate), proba)), key=lambda i: i[0], reverse=True)[0][1]
     print("Optimal probability cutoff", optimal_proba_cutoff)
 
-    roc_predictions = [1 if i >= optimal_proba_cutoff else 0 for i in predictions[:, -1]]
+    roc_predictions = [1 if i >= optimal_proba_cutoff else 0 for i in predictions]
 
     #print("Accuracy Score Before and After Thresholding:  {}".format(accuracy_score(y_test, predictions), accuracy_score(y_test, roc_predictions)))
     print("Precision Score After Thresholding: {}".format( precision_score(ground_truth, roc_predictions)))
     print("Recall Score After Thresholding: {}".format(recall_score(ground_truth, roc_predictions)))
     print("F1 Score After Thresholding: {}".format( f1_score(ground_truth, roc_predictions)))
+    if args.write:
+
+        import csv
+
+        # Example label dictionary for decoding
+        label_dict = {0: "NonRings", 1: "Rings"}
+
+        # Decode predicted labels from indices to text labels
+        decoded_labels = [label_dict[np.argmax(pred)] for pred in predictions]
+
+        # Combine filename, second column of numpy array, and predicted labels
+        rows = [[filename, pred, label] for filename, pred, label in zip(filenames, predictions, decoded_labels)]
+
+        # Save rows to a CSV file
+        csv_filename = "eval_output.csv"
+
+        with open(csv_filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["Filename", "Prediction", "Label"])  # Write header row
+            writer.writerows(rows)
+
+ 

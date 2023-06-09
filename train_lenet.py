@@ -75,15 +75,13 @@ def augment_custom(images, labels):
     images = random_int_rot_img(images,seed=123)
     return (images, labels)
 
-def prepare(ds, batch_size=None, shuffle=False, augment=False):
-    AUTOTUNE = tf.data.AUTOTUNE
+def prepare(ds, shuffle=False, augment=False):
     if shuffle:
         ds = ds.shuffle(1000)
+    ds = ds.batch(batch_size)
     # Use data augmentation only on the training set.
-    if augment and batch_size:
-        ds = ds.unbatch()
+    if augment :
         ds = ds.map(augment_custom, num_parallel_calls=AUTOTUNE)
-        ds = ds.batch(batch_size)
     return ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 if __name__=="__main__":
@@ -116,7 +114,7 @@ if __name__=="__main__":
       color_mode='rgb',
       seed=random_state,
       image_size=target_size,
-      batch_size=batch_size)
+      batch_size=None)
 
     # save filenames used for training and validation to disk
     print(f"Saving filenames used for training and validation to disk...")
@@ -134,9 +132,13 @@ if __name__=="__main__":
     train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
     val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y))
 
+    AUTOTUNE = tf.data.AUTOTUNE
 
-    train_ds = prepare(train_ds, batch_size=batch_size, shuffle=True, augment=True)
+    train_ds = prepare(train_ds, shuffle=True, augment=True)
     val_ds = prepare(val_ds)
+    # save validation data for future evaluation
+    path = os.path.join(outdir,"val_data")
+    tf.data.Dataset.save(dataset, path)
 
     existing_modelpath = 'best_model.h5'
 

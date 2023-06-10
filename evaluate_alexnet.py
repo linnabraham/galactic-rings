@@ -12,7 +12,7 @@ if __name__=="__main__":
     args = parser.parse_args()
 
     model_path = args.model_path
-    data_dir = args.test_dir
+    test_dir = args.test_dir
     target_size = args.target_size
     img_height, img_width = target_size
     batch_size = args.batch_size
@@ -29,33 +29,22 @@ if __name__=="__main__":
     print(config["layers"][0]["config"]["batch_input_shape"]) 
 
     test_ds = tf.keras.utils.image_dataset_from_directory(
-      data_dir,
+      test_dir,
       #color_mode='grayscale',
       shuffle=False,
-      seed=123,
       image_size=(img_height, img_width),
-      batch_size=batch_size)
+      batch_size=None)
+
+    filenames = test_ds.file_paths
+    labels = test_ds.map(lambda _, label: label)
+    ground_truth = list(labels.as_numpy_iterator())
  
     normalization_layer = layers.Rescaling(1./255)
+    normalized_ds = test_ds.map(lambda x, y: (normalization_layer(x), y))
 
-    def change_inputs(images, labels, paths):
-      x = normalization_layer(images)
-      return x, labels,  tf.constant(paths)
-
-    normalized_ds = test_ds.map(lambda images, labels: change_inputs(images, labels, paths=test_ds.file_paths))
     AUTOTUNE = tf.data.AUTOTUNE
-    normalized_ds = normalized_ds.cache().prefetch(buffer_size=AUTOTUNE)
+    normalized_ds = normalized_ds.batch(batch_size).cache().prefetch(buffer_size=AUTOTUNE)
 
-    # create list to store the labels
-    ground_truth = []
-
-    for image_batch, labels_batch, paths in normalized_ds:
-        #predictions = model.predict_on_batch(image_batch)
-        flat = labels_batch.numpy().flatten()
-        ground_truth.extend(flat)
-
-    images, labels, paths = next(iter(normalized_ds.take(1)))
-    filenames = [ path.numpy().decode('utf-8') for path in paths]
 
     predictions = model.predict(normalized_ds)
     threshold = 0.5
@@ -105,7 +94,7 @@ if __name__=="__main__":
         label_dict = {0: "NonRings", 1: "Rings"}
 
         # Decode predicted labels from indices to text labels
-        decoded_labels = [label_dict[np.argmax(pred)] for pred in predictions]
+        decoded_labels = [label_dict[label] for label in predicted_labels]
 
         # Combine filename, second column of numpy array, and predicted labels
         rows = [[filename, pred, label] for filename, pred, label in zip(filenames, predictions, decoded_labels)]

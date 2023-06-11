@@ -34,21 +34,22 @@ def get_bin_edges(feature, num_bins=10):
     bin_edges = np.linspace(min(feature), max(feature), num_bins + 1)
     return bin_edges
 
-def subsample_df(df, colname, nsamples=100):
-    dfs = []
-    feature = df[colname]
-
-    bin_edges = get_bin_edges(feature,num_bins=10)
-    
-    # Assign data points to bins using np.digitize
+def get_hist(feature, bin_edges):
     indices = np.digitize(feature, bin_edges)
-    
+    return np.bincount(indices), bin_edges
+
+def rand_sample(series, bincounts, bin_edges, nsamples=100):
+    sample_indices = []
+    norm_factor = np.sum(bincounts)
+    targ_counts = bincounts/norm_factor * nsamples
+    # Assign data points to bins using np.digitize
+    indices = np.digitize(series, bin_edges)
     # iterate over the actual bins
     for binplace in range(1,len(bin_edges)):
-        subset = df.loc[np.where(indices==binplace)[0]]
-
-        # compute number of elements in each bin in the subsample
-        targ_count = int(len(subset)/len(feature)*nsamples)
-        dfs.append(subset.sample(targ_count))
-    return pd.concat(dfs)
+        # get indices of data subset that falls into each bin
+        subset = np.where(indices==binplace)[0]
+        # random sample the subset
+        idx = np.random.choice(subset, int(targ_counts[binplace]))
+        sample_indices.extend(idx)
+    return sample_indices
 

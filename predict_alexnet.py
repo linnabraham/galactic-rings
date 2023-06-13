@@ -6,7 +6,6 @@ import numpy as np
 if __name__=="__main__":
 
     from alexnet_utils.params import parser
-    parser.add_argument('-model_path',  help="Path of pre-trained model")
     parser.add_argument('-pred_dir',  help="Directory containing images for prediction in a single sub-folder")
     args = parser.parse_args()
 

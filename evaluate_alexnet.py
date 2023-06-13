@@ -6,7 +6,6 @@ import numpy as np
 if __name__=="__main__":
 
     from alexnet_utils.params import parser
-    parser.add_argument('-model_path',  help="Path of pre-trained model")
     parser.add_argument('-test_dir',  help="Directory containing validation or test images sorted into respective classes")
     parser.add_argument('-write', action="store_true", help="Switch to enable writing results to disk")
     args = parser.parse_args()

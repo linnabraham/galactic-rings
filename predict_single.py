@@ -52,7 +52,6 @@ def predict_single_image(model, image_path, args):
 if __name__=="__main__":
 
     from alexnet_utils.params import parser
-    parser.add_argument('-modelpath',  help="path containing pre-trained model")
     parser.add_argument('-inputs',  help="path of image or csv file for prediction")
     args = parser.parse_args()
 

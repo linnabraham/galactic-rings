@@ -9,23 +9,8 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, Callback
 from alexnet_utils.params import parser, print_arguments
 import json
 import pandas as pd
+import numpy as np
 
-def create_lenet(target_size, channels):
-
-    input_shape = (target_size[0], target_size[1], channels)
-
-    model = Sequential()
-    model.add(layers.Conv2D(filters=6, kernel_size=(10,10), activation='relu',input_shape=input_shape))
-    model.add(layers.AveragePooling2D(pool_size=(4,4)))
-
-    model.add(layers.Conv2D(filters=16, kernel_size=(3,3), activation='relu'))
-    model.add(layers.AveragePooling2D())
-
-    model.add(layers.Flatten())
-    model.add(layers.Dense(units=120, activation='relu'))
-    model.add(layers.Dense(units=84, activation='relu'))
-    model.add(layers.Dense(units=1, activation='sigmoid'))
-    return model
 
 
 class SaveHistoryCallback(Callback):
@@ -43,12 +28,10 @@ class SaveHistoryCallback(Callback):
         with open(self.file_path, 'w') as f:
             json.dump(self.history, f)
 
-def make_output_dir(output):
+def get_output_dir(output):
     # create a separate output directory for each run
     pid = os.getpid()
     outdir = os.path.join(output,f"{pid}")
-    print(f"Outputs are saved to {outdir}")
-    os.makedirs(outdir)
     return pid, outdir
 
 def random_choice(x, size, seed, axis=0, unique=True):
@@ -67,13 +50,12 @@ def random_int_rot_img(inputs,seed):
     inputs = tf.image.rot90(inputs, k=angle)
     return inputs
 
-    # define custom augmentations
-def augment_custom(images, labels):
-    images = tf.image.random_flip_left_right(images)
-    images = tf.image.random_flip_up_down(images)
-    #images = tf.image.rgb_to_grayscale(images)
-    images = random_int_rot_img(images,seed=123)
-    return (images, labels)
+def resize_and_rescale(image, label):
+  image = tf.cast(image, tf.float32)
+  image = tf.image.resize(image, [target_size[0], target_size[0]])
+  image = (image / 255.0)
+  return image, label
+
 
 def prepare(ds, shuffle=False, augment=False):
     if shuffle:
@@ -82,6 +64,8 @@ def prepare(ds, shuffle=False, augment=False):
     # Use data augmentation only on the training set.
     if augment :
         ds = ds.map(augment_custom, num_parallel_calls=AUTOTUNE)
+    else:
+        ds = ds.map(resize_and_rescale, num_parallel_calls=AUTOTUNE)
     return ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 if __name__=="__main__":
@@ -97,16 +81,6 @@ if __name__=="__main__":
     print_arguments(parser,args)
 
 
-    pid, outdir = make_output_dir(output)
-
-    # define callbacks
-    tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-    mc = ModelCheckpoint('best_model.h5', monitor='val_loss', \
-            mode='min', verbose=1, save_best_only=True)
-    history_path = os.path.join(outdir,'history.json')
-    hc = SaveHistoryCallback(history_path)
-
-
     train_ds, val_ds = tf.keras.utils.image_dataset_from_directory(
       data_dir,
       validation_split=1-train_frac,
@@ -116,29 +90,59 @@ if __name__=="__main__":
       image_size=target_size,
       batch_size=None)
 
+    pid, outdir = get_output_dir(output)
+    print(f"Outputs are saved to {outdir}")
+    os.makedirs(outdir)
+
+
+    # define callbacks
+    tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
+    mc = ModelCheckpoint('best_model.h5', monitor='val_loss', \
+            mode='min', verbose=1, save_best_only=True)
+    history_path = os.path.join(outdir,'history.json')
+    hc = SaveHistoryCallback(history_path)
+
     # save filenames used for training and validation to disk
     print(f"Saving filenames used for training and validation to disk...")
 
-    filenames = train_ds.file_paths
-    results=pd.DataFrame({"Filename":filenames})
-    results.to_csv(os.path.join(outdir,f"{pid}_train_filenames.csv"),index=False)
+    train_filenames = train_ds.file_paths
+    val_filenames = val_ds.file_paths
 
-    filenames = val_ds.file_paths
-    results=pd.DataFrame({"Filename":filenames})
-    results.to_csv(os.path.join(outdir,f"{pid}_validation_filenames.csv"),index=False)
+    pd.DataFrame({"Filename":train_filenames}).to_csv(os.path.join(outdir,f"{pid}_train_filenames.csv"),index=False)
+    pd.DataFrame({"Filename":val_filenames}).to_csv(os.path.join(outdir,f"{pid}_validation_filenames.csv"),index=False)
 
-    normalization_layer = layers.Rescaling(1./255)
+    #normalization_layer = layers.Rescaling(1./255)
 
-    train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
-    val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y))
+    #train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
+    #val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y))
+
+    # define custom augmentations
+    def augment_custom(images, labels, seed=random_state):
+        images, labels = resize_and_rescale(images, labels)
+        # Make a new seed.
+        new_seed = tf.random.experimental.stateless_split((seed,seed), num=1)[0, :]
+        images = tf.image.stateless_random_flip_left_right(images, seed=new_seed)
+        images = tf.image.stateless_random_flip_up_down(images, seed=new_seed)
+        images = tf.image.stateless_random_brightness(images, max_delta=0.2, seed=new_seed)
+        images = tf.image.stateless_random_contrast(images, lower=0.2, upper=0.5, seed=new_seed)
+        images = random_int_rot_img(images,seed=seed)
+        return (images, labels)
 
     AUTOTUNE = tf.data.AUTOTUNE
 
     train_ds = prepare(train_ds, shuffle=True, augment=True)
+    # do not shuffle or augment the validation dataset
     val_ds = prepare(val_ds)
+
     # save validation data for future evaluation
+    def change_inputs(images, labels, paths):
+      return images, labels,  tf.constant(paths)
+
+    # save filenames also along with images and labels in the saved dataset
+    val_ds_todisk = val_ds.map(lambda images, labels: change_inputs(images, labels, paths=val_filenames))
+
     path = os.path.join(outdir,"val_data")
-    tf.data.Dataset.save(dataset, path)
+    tf.data.Dataset.save(val_ds_todisk, path)
 
     existing_modelpath = 'best_model.h5'
 
@@ -155,8 +159,41 @@ if __name__=="__main__":
                                           name="recall"),
                   tf.keras.metrics.AUC(num_thresholds=100, curve='PR', name='auc_pr'),
             ]
-        model = create_lenet(target_size, channels)
-        model.compile(loss=keras.losses.binary_crossentropy, optimizer=keras.optimizers.Adam(), metrics=METRICS)
+        def make_model(metrics=METRICS, output_bias=None):
+            IMG_SIZE = target_size[0]
+
+            input_shape = (IMG_SIZE, IMG_SIZE, channels)
+
+            model = Sequential()
+            if output_bias is not None:
+                output_bias = tf.keras.initializers.Constant(output_bias)
+                model.add(layers.Conv2D(filters=6, kernel_size=(5,5), activation='relu',input_shape=input_shape, bias_initializer=output_bias))
+            else:
+                model.add(layers.Conv2D(filters=6, kernel_size=(5,5), activation='relu',input_shape=input_shape))
+            model.add(layers.AveragePooling2D(pool_size=(2,2)))
+
+            model.add(layers.Conv2D(filters=16, kernel_size=(3,3), activation='relu'))
+            model.add(layers.AveragePooling2D())
+
+            model.add(layers.Flatten())
+            model.add(layers.Dense(units=120, activation='relu'))
+            model.add(layers.Dense(units=84, activation='relu'))
+            model.add(layers.Dense(units=1, activation='sigmoid'))
+
+            model.compile(loss=keras.losses.binary_crossentropy, optimizer=keras.optimizers.Adam(), metrics=METRICS)
+            return model
+
+
+        pos = train_ds.map(lambda _, label: tf.reduce_sum(label)).reduce(0, lambda count, val: count + val)
+        neg = train_ds.map(lambda _, label: tf.reduce_sum(1 - label)).reduce(0, lambda count, val: count + val)
+        pos = pos.numpy()
+        neg = neg.numpy()
+
+        initial_bias = np.log([pos/neg])
+        print("[INFO] Calculated initial weight bias:", initial_bias)
+
+        #model = make_model(metrics=METRICS, output_bias=initial_bias)
+        model = make_model(metrics=METRICS)
 
     start = time()
 

@@ -43,7 +43,14 @@ The LeNet training script includes `augmentations`. These are on-the-fly augment
 
 `python evaluate_alexnet.py  -test_dir "data/train_data/base/validation/" -model_path output/741649/741649.h5 -batch_size 64`
 
-The prediction results are saved to a file eval_output.csv
+There is a different version of the evaluation script `evaluate_alexnet_tfdataset.py` that can accept the path to the validation dataset that has already been saved to disk.
+`python evalutate_alexnet_tfdataset.py -test_dir "output/741649/val_data" -model_path best_model.h5 -batch_size 64`
+	
+The prediction results are saved to a file eval_output.csv if the `-write` switch is passed while running.
+
++ The confusion matrix and other metrics based on it are generated using a classification threshold of 0.5.
++ The `ROC` is generated using a number of thresholds and an algorithm is used to automatically compute a best threshold from it.
++ The same metrics are re-evaluated using this optimal threshold
 
 ## Predict on a large number of unlabelled images
 

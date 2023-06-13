@@ -57,16 +57,20 @@ def rescale(image, label):
     return image, label
 
 # define custom augmentations
-def augment_custom(images, labels):
-    seed=random_state
+def augment_custom(images, labels, augmentation_types, seed):
+    
     images, labels = rescale(images, labels)
     # Make a new seed.
     new_seed = tf.random.experimental.stateless_split((seed,seed), num=1)[0, :]
-    images = tf.image.stateless_random_flip_left_right(images, seed=new_seed)
-    images = tf.image.stateless_random_flip_up_down(images, seed=new_seed)
-    images = tf.image.stateless_random_brightness(images, max_delta=0.2, seed=new_seed)
-    images = tf.image.stateless_random_contrast(images, lower=0.2, upper=0.5, seed=new_seed)
-    images = random_int_rot_img(images,seed=seed)
+    if 'rotation' in augmentation_types:
+        images = random_int_rot_img(images,seed=seed)
+    if 'flip' in augmentation_types:
+        images = tf.image.stateless_random_flip_left_right(images, seed=new_seed)
+        images = tf.image.stateless_random_flip_up_down(images, seed=new_seed)
+    if 'brightness' in augmentation_types:
+        images = tf.image.stateless_random_brightness(images, max_delta=0.2, seed=new_seed)
+    if 'contrast' in augmentation_types:
+        images = tf.image.stateless_random_contrast(images, lower=0.2, upper=0.5, seed=new_seed)
 
     return (images, labels)
 
@@ -84,7 +88,8 @@ if __name__=="__main__":
     channels = args.channels
     output = args.output_dir
     epochs = args.epochs
-
+    model_path = args.model_path
+    augmentation_types = args.augmentation_types
     # set the color_mode from the number of channels
 
     #color_dict = {1:'grayscale',3:'rgb'}
@@ -113,7 +118,7 @@ if __name__=="__main__":
 
     # define callbacks
     tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-    mc = ModelCheckpoint('best_model.h5', monitor='val_loss', \
+    mc = ModelCheckpoint(model_path, monitor='val_loss', \
             mode='min', verbose=1, save_best_only=True)
     history_path = os.path.join(outdir,'history.json')
     hc = SaveHistoryCallback(history_path)
@@ -132,8 +137,8 @@ if __name__=="__main__":
     train_ds = (
             train_ds
             .shuffle(1000)
-            .map(augment_custom, num_parallel_calls=AUTOTUNE)
-            .cache()
+            .map(lambda x, y: augment_custom(x, y, augmentation_types, seed=random_state), num_parallel_calls=AUTOTUNE)
+            #.cache()
             .batch(batch_size)
             .prefetch(buffer_size=AUTOTUNE)
             )

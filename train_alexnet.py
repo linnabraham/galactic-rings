@@ -9,8 +9,6 @@ from tensorflow.keras.callbacks import ModelCheckpoint, Callback, TensorBoard
 from alexnet_utils.params import parser, print_arguments
 from alexnet_utils.alexnet import AlexNet
 
-global random_state
-
 class SaveHistoryCallback(Callback):
     def __init__(self, file_path):
         super().__init__()
@@ -146,7 +144,7 @@ if __name__=="__main__":
     val_ds = (
             val_ds
             .map(rescale, num_parallel_calls=AUTOTUNE)
-            .cache()
+            #.cache()
             .batch(batch_size)
             .prefetch(buffer_size=AUTOTUNE)
             )

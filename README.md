@@ -29,9 +29,9 @@ The best model is currently defined as the one which has the lowest `validation 
 The training script saves the outputs generated during training to a folder `outputs`. Each training session creates a different subfolder based on the process id.
 It contains the following:
 
-	List of filenames used for training and validation are separately saved as text files.
-	The validation data along with filenames is saved as `tf.data.Dataset` object to a folder named `val_data`.
-	The training and validation metrics are saved to a file named `history.json`. The file can be viewed using the command `python training-graphs.py output/pid/history.json`
++ List of filenames used for training and validation are separately saved as text files.
++ The validation data along with filenames is saved as `tf.data.Dataset` object to a folder named `val_data`.
++ The training and validation metrics are saved to a file named `history.json`. The file can be viewed using the command `python training-graphs.py output/pid/history.json`
 
 ## Train LeNet
 
@@ -42,8 +42,11 @@ The LeNet training script includes `augmentations`. These are on-the-fly augment
 ## Evaluate the performance of the trained model on validation or test data
 
 `python evaluate_alexnet.py  -test_dir "data/train_data/base/validation/" -model_path output/741649/741649.h5 -batch_size 64`
+The data directory passed to the script should contain images in two sub directories with the same class names that were used for training"
+The script is model agnostic. Hence can be used to evaluate the performance of any trained model.
 
 There is a different version of the evaluation script `evaluate_alexnet_tfdataset.py` that can accept the path to the validation dataset that has already been saved to disk.
+
 `python evalutate_alexnet_tfdataset.py -test_dir "output/741649/val_data" -model_path best_model.h5 -batch_size 64`
 	
 The prediction results are saved to a file eval_output.csv if the `-write` switch is passed while running.

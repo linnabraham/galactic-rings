@@ -167,7 +167,7 @@ if __name__=="__main__":
 
     if os.path.exists(model_path):
         print("[INFO] Loading existing model from disk ..")
-        model = load_model(existing_modelpath)
+        model = load_model(model_path)
     else:
         classification_threshold = 0.5
 

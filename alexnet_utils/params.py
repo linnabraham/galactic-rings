@@ -31,7 +31,7 @@ parser.add_argument('-random_state', type=int, default=42, help="seed for random
 parser.add_argument('-num_classes', type=int, default=2, help="Number of classes")
 parser.add_argument('-channels', type=int, default=3, help="Number of channels in the image data")
 parser.add_argument('-output_dir', default="output", help="Location to store the outputs generated during training")
-parser.add_argument('-model_path', default="best_model.h5", help="Path to save model during training and to load model from when testing")
+parser.add_argument('-model_path', default="best_model.h5", help="Filepath to save model during training and to load model from when testing")
 parser.add_argument('-augmentation_types', nargs='+', type=str, default=['flip', 'rotation'], choices=['brightness', 'contrast', 'rotation', 'flip', 'None'],
                     help='Types of augmentation: brightness, contrast')
 

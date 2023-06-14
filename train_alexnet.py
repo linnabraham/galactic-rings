@@ -116,7 +116,7 @@ if __name__=="__main__":
 
     # define callbacks
     tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-    mc = ModelCheckpoint(model_path, monitor='val_loss', \
+    mc = ModelCheckpoint(model_path, monitor='val_auc_pr', \
             mode='min', verbose=1, save_best_only=True)
     history_path = os.path.join(outdir,'history.json')
     hc = SaveHistoryCallback(history_path)
@@ -165,9 +165,7 @@ if __name__=="__main__":
     initial_bias = np.log([pos/neg])
     print("[INFO] Calculated initial weight bias:", initial_bias)
 
-    existing_modelpath = 'best_model.h5'
-
-    if os.path.exists(existing_modelpath):
+    if os.path.exists(model_path):
         print("[INFO] Loading existing model from disk ..")
         model = load_model(existing_modelpath)
     else:

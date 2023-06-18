@@ -12,11 +12,48 @@ def load_dataset(dataset):
     test_ds = test_ds.map(lambda images, labels, paths: (images, labels))
     return filenames, test_ds
 
+def precision_at_recall(y_true, y_scores, recall_threshold):
+    # Sort the predictions by score in descending order
+    sorted_indices = np.argsort(y_scores)[::-1]
+    sorted_labels = y_true[sorted_indices]
+    
+    # Calculate the cumulative sum of true positives
+    cumsum = np.cumsum(sorted_labels)
+    
+    # Calculate the recall and precision for each threshold
+    recall = cumsum / np.sum(y_true)
+    precision = cumsum / np.arange(1, len(y_true) + 1)
+    
+    # Find the index where the recall crosses the given threshold
+    index = np.argmax(recall >= recall_threshold)
+    
+    # Return the precision at the specified recall threshold
+    return precision[index]
+
+def recall_at_precision(y_true, y_scores, precision_threshold):
+    # Sort the predictions by score in descending order
+    sorted_indices = np.argsort(y_scores.flatten())[::-1]
+    sorted_labels = y_true[sorted_indices]
+    
+    # Calculate the cumulative sum of true positives
+    cumsum = np.cumsum(sorted_labels)
+    
+    # Calculate the precision and recall for each threshold
+    recall = cumsum / np.sum(y_true)
+    precision = cumsum / np.arange(1, len(y_true) + 1)
+    
+    # Find the index where the precision reaches 1.0
+    index = np.argmax(precision >= precision_threshold)
+    
+    # Return the recall at the specified precision threshold
+    return recall[index]
+
 if __name__=="__main__":
 
     from alexnet_utils.params import parser
     parser.add_argument('-test_dir',  help="Directory containing validation or test images sorted into respective classes")
     parser.add_argument('-saved_ds',  default=False, help="Boolean flag that is true if test_dir points to a tf.data.Dataset object")
+    parser.add_argument('-threshold', type=float,  default=0.5, help="Decimal threshold to use for creating CM, etc.")
     parser.add_argument('-write', action="store_true", help="Switch to enable writing results to disk")
     args = parser.parse_args()
 
@@ -56,12 +93,11 @@ if __name__=="__main__":
         filenames, test_ds = load_dataset(args.test_dir)
         labels = test_ds.unbatch().map(lambda _, label: label)
 
-
     ground_truth = list(labels.as_numpy_iterator())
 
     predictions = model.predict(test_ds)
 
-    threshold = 0.5
+    threshold = args.threshold
     print("Using a classification threshold", threshold)
 
     #predicted_labels = np.argmax(predictions, axis=1)
@@ -75,19 +111,23 @@ if __name__=="__main__":
     print(confusion_mtx)
 
     # Compute other accuracy metrics
-    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve, \
+    balanced_accuracy_score
 
     accuracy = accuracy_score(ground_truth, predicted_labels)
     precision = precision_score(ground_truth, predicted_labels)
     recall = recall_score(ground_truth, predicted_labels)
     f1 = f1_score(ground_truth, predicted_labels)
     roc_auc = roc_auc_score(ground_truth, predictions)
+    bal_acc = balanced_accuracy_score(ground_truth, predicted_labels)
+
 
     print("Accuracy:", accuracy)
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1-score:", f1)
     print("ROC AUC Score:", roc_auc)
+    print("Balanced Accuracy:", bal_acc)
 
    # Automatically compute a classification threshold using the ROC in order to maximize the evaluation metrics
     false_pos_rate, true_pos_rate, proba = roc_curve(ground_truth, predictions)
@@ -95,6 +135,19 @@ if __name__=="__main__":
     print("Optimal probability cutoff", optimal_proba_cutoff)
 
     roc_predictions = [1 if i >= optimal_proba_cutoff else 0 for i in predictions]
+
+    recall_threshold = 0.75
+    precision = precision_at_recall(np.array(ground_truth), predictions, recall_threshold)
+    print(f"Precision at recall {recall_threshold}: {precision}")
+
+    precision_threshold = 0.8
+
+    recall = recall_at_precision(np.array(ground_truth), predictions, precision_threshold)
+    print(f"Recall at precision {precision_threshold}: {recall}")
+
+    confusion_mtx = confusion_matrix(ground_truth, roc_predictions)
+    print("New Confusion Matrix:")
+    print(confusion_mtx)
 
     #print("Accuracy Score Before and After Thresholding:  {}".format(accuracy_score(y_test, predictions), accuracy_score(y_test, roc_predictions)))
     print("Precision Score After Thresholding: {}".format( precision_score(ground_truth, roc_predictions)))

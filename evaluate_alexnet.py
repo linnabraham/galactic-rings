@@ -3,10 +3,20 @@ from tensorflow.keras import layers
 from tensorflow.keras.models import load_model
 import numpy as np
 
+def load_dataset(dataset):
+    test_ds = tf.data.Dataset.load(dataset)
+
+    images, labels, paths = next(iter(test_ds.take(1)))
+    filenames = [ path.numpy().decode('utf-8') for path in paths]
+
+    test_ds = test_ds.map(lambda images, labels, paths: (images, labels))
+    return filenames, test_ds
+
 if __name__=="__main__":
 
     from alexnet_utils.params import parser
     parser.add_argument('-test_dir',  help="Directory containing validation or test images sorted into respective classes")
+    parser.add_argument('-saved_ds',  default=False, help="Boolean flag that is true if test_dir points to a tf.data.Dataset object")
     parser.add_argument('-write', action="store_true", help="Switch to enable writing results to disk")
     args = parser.parse_args()
 
@@ -27,25 +37,30 @@ if __name__=="__main__":
     print("Expected input shape for the model")
     print(config["layers"][0]["config"]["batch_input_shape"]) 
 
-    test_ds = tf.keras.utils.image_dataset_from_directory(
-      test_dir,
-      #color_mode='grayscale',
-      shuffle=False,
-      image_size=(img_height, img_width),
-      batch_size=None)
+    if not args.saved_ds:
+        test_ds = tf.keras.utils.image_dataset_from_directory(
+          test_dir,
+          #color_mode='grayscale',
+          shuffle=False,
+          image_size=(img_height, img_width),
+          batch_size=None)
 
-    filenames = test_ds.file_paths
-    labels = test_ds.map(lambda _, label: label)
+        filenames = test_ds.file_paths
+        normalization_layer = layers.Rescaling(1./255)
+        test_ds = test_ds.map(lambda x, y: (normalization_layer(x), y))
+        labels = test_ds.map(lambda _, label: label)
+        AUTOTUNE = tf.data.AUTOTUNE
+        test_ds = test_ds.batch(batch_size).cache().prefetch(buffer_size=AUTOTUNE)
+
+    else:
+        filenames, test_ds = load_dataset(args.test_dir)
+        labels = test_ds.unbatch().map(lambda _, label: label)
+
+
     ground_truth = list(labels.as_numpy_iterator())
- 
-    normalization_layer = layers.Rescaling(1./255)
-    normalized_ds = test_ds.map(lambda x, y: (normalization_layer(x), y))
 
-    AUTOTUNE = tf.data.AUTOTUNE
-    normalized_ds = normalized_ds.batch(batch_size).cache().prefetch(buffer_size=AUTOTUNE)
+    predictions = model.predict(test_ds)
 
-
-    predictions = model.predict(normalized_ds)
     threshold = 0.5
     print("Using a classification threshold", threshold)
 

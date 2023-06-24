@@ -1,14 +1,12 @@
 import os
 from time import time
 import json
-import pandas as pd
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.callbacks import ModelCheckpoint, Callback, TensorBoard
-from alexnet_utils.params import parser, print_arguments
-from alexnet_utils.alexnet import AlexNet
 from sklearn.model_selection import KFold
+from alexnet_utils.alexnet import AlexNet
 
 
 class SaveHistoryCallback(Callback):
@@ -76,7 +74,7 @@ def augment_custom(images, labels, augmentation_types, seed):
 
 if __name__=="__main__":
 
-    from alexnet_utils.params import parser
+    from alexnet_utils.params import parser, print_arguments
     parser.add_argument('-kfolds', default=3 , type=int, help="No. of splits to use in k-fold splitting")
     args = parser.parse_args()
 
@@ -155,9 +153,9 @@ if __name__=="__main__":
                 )
         # define callbacks
         tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-        mc = ModelCheckpoint(f"{model_path}_{i}", monitor='val_auc_pr', \
+        mc = ModelCheckpoint(f"{i}_{model_path}", monitor='val_auc_pr', \
                 mode='max', verbose=1, save_best_only=True)
-        history_path = os.path.join(outdir,'history_{i}.json')
+        history_path = os.path.join(outdir,f"{i}_history.json")
         hc = SaveHistoryCallback(history_path)
 
         classification_threshold = 0.5
@@ -178,8 +176,7 @@ if __name__=="__main__":
 
         start = time()
 
-        history = model.fit(train_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard])
-        history = model.evaluate(val_ds, epochs=epochs, shuffle=False, callbacks=[hc, tensorboard])
+        history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard])
 
         print("Total time taken for training: %d seconds" % (time()-start))
 

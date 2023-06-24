@@ -103,45 +103,37 @@ if __name__=="__main__":
       image_size=target_size,
       batch_size=None)
 
-    for item in train_ds.map(lambda x, y:x):
-        print(type(item))
-        print(item.numpy().shape)
-        break
-    train_images = np.array([tensor.numpy() for tensor in list(train_ds.map(lambda x, y:x))])
-    print(train_images.shape)
-    sys.exit(0)
-    train_labels = np.concatenate(list(train_ds.map(lambda x, y:y)))
-    print(type(train_images), type(train_labels))
-    print(train_images.shape, train_labels.shape)
-   
-    train_images = [ tensor.numpy() for tensor in list(train_ds.map(lambda x, y:x)) ]
-    train_images = np.array(train_images)
-    train_labels = np.array(train_labels)
-    train_labels = [ tensor.numpy() for tensor in list(train_ds.map(lambda x, y:y)) ]
-    print(len(train_images), len(train_labels))
-    print(type(train_images[0]), type(train_labels[0]))
-    print(type(train_images), type(train_labels))
+    X = np.array([tensor.numpy() for tensor in list(train_ds.map(lambda x, y:x))])
+    Y = np.array([tensor.numpy() for tensor in list(train_ds.map(lambda x, y:y))])
+    print(X.shape)
 
     # Initialize the k-fold object
     num_folds = 5
     kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
-    X = train_images
-    Y = train_labels
+
     for i, (train_index, test_index) in enumerate(kf.split(X)):
         print(f"Fold {i}:")
         print(f"  Train: index={train_index}")
         print(f"  Test:  index={test_index}")
+        X_val = X[test_index]
+        Y_val = Y[test_index]
+        print(X_val.shape)
+        print("Validation set created")
 
-    # Iterate over the folds
-    for train_index, val_index in kf.split(X):
-        print(len(train_index), len(val_index))
-        print(train_index[0])
-        print(type(train_index[0]))
-        print(val_index[0])
-        print(type(val_index[0]))
-        X_train, X_val = X[train_index], X[val_index]
-        #y_train, y_val = Y[train_index], Y[val_index]
+        val_ds  = tf.data.Dataset.from_tensor_slices((X_val, Y_val))
+        print("Length of val_ds;", len(val_ds))
+        del X_val
 
+        X_train = X[train_index]
+        Y_train = Y[train_index]
+        print("Training set created")
+
+        train_ds = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
+        print("Length of train_ds;", len(train_ds))
+
+        del X_train
+
+    sys.exit(0)
 
     class_names = train_ds.class_names
     print("Training dataset class names are :",class_names)

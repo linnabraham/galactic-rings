@@ -75,9 +75,11 @@ def augment_custom(images, labels, augmentation_types, seed):
     return (images, labels)
 
 if __name__=="__main__":
-    import sys
 
+    from alexnet_utils.params import parser
+    parser.add_argument('-kfolds', default=3 , type=int, help="No. of splits to use in k-fold splitting")
     args = parser.parse_args()
+
     print_arguments(parser,args)
 
     data_dir = args.images
@@ -91,10 +93,12 @@ if __name__=="__main__":
     epochs = args.epochs
     model_path = args.model_path
     augmentation_types = args.augmentation_types
-    # set the color_mode from the number of channels
 
-    #color_dict = {1:'grayscale',3:'rgb'}
-    #color_mode = color_dict[channels]
+
+    # create an output directory to hold saved model, training graphs etc.
+    pid, outdir = get_output_dir(output)
+    print(f"Outputs are saved to {outdir}")
+    os.makedirs(outdir)
 
     train_ds = tf.keras.utils.image_dataset_from_directory(
       data_dir,
@@ -108,8 +112,8 @@ if __name__=="__main__":
     print(X.shape)
 
     # Initialize the k-fold object
-    num_folds = 5
-    kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
+    num_folds = args.kfolds
+    kf = KFold(n_splits=num_folds, shuffle=True, random_state=random_state)
 
     for i, (train_index, test_index) in enumerate(kf.split(X)):
         print(f"Fold {i}:")
@@ -122,7 +126,7 @@ if __name__=="__main__":
 
         val_ds  = tf.data.Dataset.from_tensor_slices((X_val, Y_val))
         print("Length of val_ds;", len(val_ds))
-        del X_val
+        del X_val, Y_val
 
         X_train = X[train_index]
         Y_train = Y[train_index]
@@ -130,77 +134,32 @@ if __name__=="__main__":
 
         train_ds = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
         print("Length of train_ds;", len(train_ds))
+        del X_train, Y_train
 
-        del X_train
+        AUTOTUNE = tf.data.AUTOTUNE
+        train_ds = (
+                train_ds
+                .shuffle(1000)
+                .map(lambda x, y: augment_custom(x, y, augmentation_types, seed=random_state), num_parallel_calls=AUTOTUNE)
+                #.cache()
+                .batch(batch_size)
+                .prefetch(buffer_size=AUTOTUNE)
+                )
 
-    sys.exit(0)
+        val_ds = (
+                val_ds
+                .map(rescale, num_parallel_calls=AUTOTUNE)
+                #.cache()
+                .batch(batch_size)
+                .prefetch(buffer_size=AUTOTUNE)
+                )
+        # define callbacks
+        tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
+        mc = ModelCheckpoint(f"{model_path}_{i}", monitor='val_auc_pr', \
+                mode='max', verbose=1, save_best_only=True)
+        history_path = os.path.join(outdir,'history_{i}.json')
+        hc = SaveHistoryCallback(history_path)
 
-    class_names = train_ds.class_names
-    print("Training dataset class names are :",class_names)
-    
-    # set the num_classes automatically from the number of directories found  by the data generator
-    #num_classes = len(class_names)
-
-
-    # create an output directory to hold saved model, training graphs etc.
-    pid, outdir = get_output_dir(output)
-    print(f"Outputs are saved to {outdir}")
-    os.makedirs(outdir)
-
-    # define callbacks
-    tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-    mc = ModelCheckpoint(model_path, monitor='val_auc_pr', \
-            mode='max', verbose=1, save_best_only=True)
-    history_path = os.path.join(outdir,'history.json')
-    hc = SaveHistoryCallback(history_path)
-
-    print(f"Saving filenames used for training and validation to disk...")
-
-    train_filenames = train_ds.file_paths
-    val_filenames = val_ds.file_paths
-
-    pd.DataFrame({"Filename":train_filenames}).to_csv(os.path.join(outdir,f"{pid}_train_filenames.csv"),index=False)
-    pd.DataFrame({"Filename":val_filenames}).to_csv(os.path.join(outdir,f"{pid}_validation_filenames.csv"),index=False)
-
-
-    AUTOTUNE = tf.data.AUTOTUNE
-    train_ds = (
-            train_ds
-            .shuffle(1000)
-            .map(lambda x, y: augment_custom(x, y, augmentation_types, seed=random_state), num_parallel_calls=AUTOTUNE)
-            #.cache()
-            .batch(batch_size)
-            .prefetch(buffer_size=AUTOTUNE)
-            )
-
-    val_ds = (
-            val_ds
-            .map(rescale, num_parallel_calls=AUTOTUNE)
-            #.cache()
-            .batch(batch_size)
-            .prefetch(buffer_size=AUTOTUNE)
-            )
-
-    # save filenames also along with images and labels in the saved dataset
-    def change_inputs(images, labels, paths):
-      return images, labels,  tf.constant(paths)
-
-    # save validation data for future evaluation
-    val_ds_todisk = val_ds.map(lambda images, labels: change_inputs(images, labels, paths=val_filenames))
-
-    path = os.path.join(outdir,"val_data")
-    tf.data.Dataset.save(val_ds_todisk, path)
-
-    # calculate an intial bias to apply based on the class imbalance in the training data
-    pos = train_ds.map(lambda _, label: tf.reduce_sum(label)).reduce(0, lambda count, val: count + val).numpy()
-    neg = train_ds.map(lambda _, label: tf.reduce_sum(1 - label)).reduce(0, lambda count, val: count + val).numpy()
-    initial_bias = np.log([pos/neg])
-    print("[INFO] Calculated initial weight bias:", initial_bias)
-
-    if os.path.exists(model_path):
-        print("[INFO] Loading existing model from disk ..")
-        model = load_model(model_path)
-    else:
         classification_threshold = 0.5
 
         METRICS = [
@@ -217,8 +176,14 @@ if __name__=="__main__":
         print("[INFO] compiling model...")
         model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), metrics=METRICS)
 
-    start = time()
+        start = time()
 
-    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard])
+        history = model.fit(train_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard])
+        history = model.evaluate(val_ds, epochs=epochs, shuffle=False, callbacks=[hc, tensorboard])
 
-    print("Total time taken for training: %d seconds" % (time()-start))
+        print("Total time taken for training: %d seconds" % (time()-start))
+
+
+
+
+

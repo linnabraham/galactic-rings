@@ -34,7 +34,7 @@ def get_output_dir(output):
 def random_choice(x, size, seed, axis=0, unique=True):
     dim_x = tf.cast(tf.shape(x)[axis], tf.int64)
     indices = tf.range(0, dim_x, dtype=tf.int64)
-    sample_index = tf.random.experimental.stateless_shuffle(indices,seed=seed)[:size]
+    sample_index = tf.random.shuffle(indices,seed=seed)[:size]
     sample = tf.gather(x, sample_index, axis=axis)
 
     return sample, sample_index
@@ -42,8 +42,8 @@ def random_choice(x, size, seed, axis=0, unique=True):
 def random_int_rot_img(inputs,seed):
     angles = tf.constant([1, 2, 3, 4])
     # Make a new seed.
-    new_seed = tf.random.experimental.stateless_split((seed,seed), num=1)[0, :]
-    angle = random_choice(angles,1,seed=new_seed)[0][0]
+    #new_seed = tf.random.experimental.stateless_split((seed,seed), num=1)[0, :]
+    angle = random_choice(angles,1,seed=seed)[0][0]
     inputs = tf.image.rot90(inputs, k=angle)
 
     return inputs
@@ -59,16 +59,17 @@ def augment_custom(images, labels, augmentation_types, seed):
     
     images, labels = rescale(images, labels)
     # Make a new seed.
-    new_seed = tf.random.experimental.stateless_split((seed,seed), num=1)[0, :]
+    #new_seed = tf.random.experimental.stateless_split((seed,seed), num=1)[0, :]
+    new_seed = seed
     if 'rotation' in augmentation_types:
         images = random_int_rot_img(images,seed=seed)
     if 'flip' in augmentation_types:
-        images = tf.image.stateless_random_flip_left_right(images, seed=new_seed)
-        images = tf.image.stateless_random_flip_up_down(images, seed=new_seed)
+        images = tf.image.random_flip_left_right(images, seed=new_seed)
+        images = tf.image.random_flip_up_down(images, seed=new_seed)
     if 'brightness' in augmentation_types:
-        images = tf.image.stateless_random_brightness(images, max_delta=0.2, seed=new_seed)
+        images = tf.image.random_brightness(images, max_delta=0.2, seed=new_seed)
     if 'contrast' in augmentation_types:
-        images = tf.image.stateless_random_contrast(images, lower=0.2, upper=0.5, seed=new_seed)
+        images = tf.image.random_contrast(images, lower=0.2, upper=0.5, seed=new_seed)
 
     return (images, labels)
 

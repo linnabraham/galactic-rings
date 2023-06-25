@@ -78,13 +78,15 @@ The predictions are saved to a file called `predictions.csv`
 The prediction script can also predict on single images by giving an image path instead of a csv path.
 
 ## K-fold data splitting
+
 `python helpers/split_data_kf.py data/E2 3 data_kfold_dir`
 This script reads the dataset folder and creates a folder that contains k subsets each with a train and val folder
 In order to do k-fold cross validation training, train and validate on each of these k train and validation sets
 and average the validation metrics
 
 ## Download the data
-```python download_data.py```
+
+```python helpers/download_data.py```
 
 data downloads as a zip file by default inside `data/images_train`
 

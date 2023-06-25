@@ -56,31 +56,14 @@ The prediction results are saved to a file eval_output.csv if the `-write` switc
 + The `ROC` is generated using a number of thresholds and an algorithm is used to automatically compute a best threshold from it.
 + The same metrics are re-evaluated using this optimal threshold
 
-## Predict on a large number of unlabelled images
+## Predict using a directory of unlabelled images
 
 `python predict_alexnet.py -pred_dir data/Panstarrs/dummy -model_path output/741649/741649.h5 -batch_size 64`
 
+The images should be present in a single sub folder inside the `pred_dir` directory
 The predictions are saved to a file called pred_output.csv
 
-
-# Deprecated Workflow
-## Create training data
-
-`python makedata.py -images data/images_train/E2`
-
-The script takes the the images within the original folder and splits it into three sets for training validation and testing.
-An augmentation is then run on the training set of the Rings class using the augmentation script parameter.
-The script used for augmentation can be found in the `helpers` directory.
-The non-rings class is not augmented.
-
-## Download the data
-```python download_data.py```
-
-data downloads as a zip file by default inside `data/images_train`
-
-unzip the file and place it in a folder inside the `images_train` folder
-
-### Predict single 
+### Predict on single images or list of images
 
 ```python predict_single.py -model_path output/263861/263861.h5 -inputs nair_common_withpredict.csv```
 
@@ -93,6 +76,30 @@ find path/to/images/ -type f > images_for_prediction.csv
 The predictions are saved to a file called `predictions.csv` 
 
 The prediction script can also predict on single images by giving an image path instead of a csv path.
+
+## K-fold data splitting
+`python helpers/split_data_kf.py data/E2 3 data_kfold_dir`
+This script reads the dataset folder and creates a folder that contains k subsets each with a train and val folder
+In order to do k-fold cross validation training, train and validate on each of these k train and validation sets
+and average the validation metrics
+
+## Download the data
+```python download_data.py```
+
+data downloads as a zip file by default inside `data/images_train`
+
+unzip the file and place it in a folder inside the `images_train` folder
+
+
+# Deprecated Workflow
+## Create training data
+
+`python helpers/makedata.py -images data/images_train/E2`
+
+The script takes the the images within the original folder and splits it into three sets for training validation and testing.
+An augmentation is then run on the training set of the Rings class using the augmentation script parameter.
+The script used for augmentation can be found in the `helpers` directory.
+The non-rings class is not augmented.
 
 # Things to do
 

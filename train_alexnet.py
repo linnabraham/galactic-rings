@@ -74,6 +74,8 @@ def augment_custom(images, labels, augmentation_types, seed):
 
 if __name__=="__main__":
 
+    parser.add_argument('-val_dir', default=None, help="path containing validation data")
+    parser.add_argument('-retrain', type=bool, default=False, help="Whether to continue previous training")
     args = parser.parse_args()
     print_arguments(parser,args)
 
@@ -88,20 +90,35 @@ if __name__=="__main__":
     epochs = args.epochs
     model_path = args.model_path
     augmentation_types = args.augmentation_types
+    val_dir = args.val_dir
     # set the color_mode from the number of channels
 
     #color_dict = {1:'grayscale',3:'rgb'}
     #color_mode = color_dict[channels]
 
-    train_ds, val_ds = tf.keras.utils.image_dataset_from_directory(
-      data_dir,
-      validation_split=1-train_frac,
-      subset="both",
-      color_mode='rgb',
-      seed=random_state,
-      image_size=target_size,
-      batch_size=None)
+    if val_dir is None:
+        train_ds, val_ds = tf.keras.utils.image_dataset_from_directory(
+          data_dir,
+          validation_split=1-train_frac,
+          subset="both",
+          color_mode='rgb',
+          seed=random_state,
+          image_size=target_size,
+          batch_size=None)
+    else:
+        train_ds = tf.keras.utils.image_dataset_from_directory(
+          data_dir,
+          color_mode='rgb',
+          seed=random_state,
+          image_size=target_size,
+          batch_size=None)
 
+        val_ds = tf.keras.utils.image_dataset_from_directory(
+              val_dir,
+              color_mode='rgb',
+              seed=random_state,
+              image_size=target_size,
+              batch_size=None)
     class_names = train_ds.class_names
     print("Training dataset class names are :",class_names)
     
@@ -165,9 +182,13 @@ if __name__=="__main__":
     initial_bias = np.log([pos/neg])
     print("[INFO] Calculated initial weight bias:", initial_bias)
 
-    if os.path.exists(model_path):
-        print("[INFO] Loading existing model from disk ..")
-        model = load_model(model_path)
+    if args.retrain:
+
+        if os.path.exists(model_path):
+            print("[INFO] Loading existing model from disk ..")
+            model = load_model(model_path)
+        else:
+            print("Invalid model path....")
     else:
         classification_threshold = 0.5
 

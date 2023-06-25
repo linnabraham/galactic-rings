@@ -11,7 +11,7 @@ pip install -r requirements.txt
 
 ## Train AlexNet
 
-`python train_alexnet.py -images data/images_train/E2 -batch_size 16`
+`python train_alexnet.py -images data/images_train/E2 -batch_size 16 -augmentation_types brightness flip rotations`
 
 The data is split into training and validations sets internally by tf data loaders. 
 The model architecture is defined in the file `alexnet-utils/alexnet.py`. Default parameters are defined in `alexnet-utils/params.py`.
@@ -23,7 +23,8 @@ The augmentations currently employed are:
 + Random Brightness Adjustment
 + Random Contrast Enhancement
 
-The model is saved to a file `best_model.h5` in the base of the directory. If this file already exists, the model is loaded from this file when the script is run.
+The path where the trained model is saved can be controlled through the `model_path` parameter (default value is `best_model.h5`)
+If this file already exists, the model is loaded from this file when the script is run.
 The best model is currently defined as the one which has the lowest `validation loss`.
 
 The training script saves the outputs generated during training to a folder `outputs`. Each training session creates a different subfolder based on the process id.

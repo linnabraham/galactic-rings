@@ -11,7 +11,7 @@ pip install -r requirements.txt
 
 ## Train AlexNet
 
-`python train_alexnet.py -images data/images_train/E2 -batch_size 16 -augmentation_types brightness flip rotations`
+`python train_alexnet.py -images data/images_train/E2 -batch_size 16 -augmentation_types brightness flip rotation`
 
 The data is split into training and validations sets internally by tf data loaders. 
 The model architecture is defined in the file `alexnet-utils/alexnet.py`. Default parameters are defined in `alexnet-utils/params.py`.

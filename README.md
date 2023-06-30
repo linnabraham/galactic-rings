@@ -111,3 +111,11 @@ The non-rings class is not augmented.
 	+ Bias the cost function
 + Create a new metric to track during model training that is a weighted sum of precision and recall. This metric should be based on our goals. Specifically the desired purity(precision) vs completness(recall) 
 of the astronomical catalog
+
+# CHANGES
+
++ In the `kf-rand` branch, the `train_alexnet.py` script has been updated to incorporate some changes
+	+  stateful random functions
+	+ train and validation directories can now be specified separately
+	+ A new flag called `retrain` has been added that has to be specified if you intend to retrain your model. Earlier retrain was implied if the default value
+	of the `model_path` variable was an existing file.

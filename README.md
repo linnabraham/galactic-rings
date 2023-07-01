@@ -11,7 +11,7 @@ pip install -r requirements.txt
 
 ## Train AlexNet
 
-`python train_alexnet.py -images data/images_train/E2 -batch_size 16 -augmentation_types brightness flip rotations`
+`python train_alexnet.py -images data/images_train/E2 -batch_size 16 -augmentation_types brightness flip rotation`
 
 The data is split into training and validations sets internally by tf data loaders. 
 The model architecture is defined in the file `alexnet-utils/alexnet.py`. Default parameters are defined in `alexnet-utils/params.py`.
@@ -111,3 +111,11 @@ The non-rings class is not augmented.
 	+ Bias the cost function
 + Create a new metric to track during model training that is a weighted sum of precision and recall. This metric should be based on our goals. Specifically the desired purity(precision) vs completness(recall) 
 of the astronomical catalog
+
+# CHANGES
+
++ In the `kf-rand` branch, the `train_alexnet.py` script has been updated to incorporate some changes
+	+  stateful random functions
+	+ train and validation directories can now be specified separately
+	+ A new flag called `retrain` has been added that has to be specified if you intend to retrain your model. Earlier retrain was implied if the default value
+	of the `model_path` variable was an existing file.

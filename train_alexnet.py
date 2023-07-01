@@ -20,6 +20,8 @@ class SaveHistoryCallback(Callback):
         self.history['val_loss'].append(logs.get('val_loss'))
         self.history['auc_pr'].append(logs.get('auc_pr'))
         self.history['val_auc_pr'].append(logs.get('val_auc_pr'))
+        self.history['val_precision'].append(logs.get('val_precision'))
+        self.history['val_recall'].append(logs.get('val_recall'))
 
         with open(self.file_path, 'w') as f:
             json.dump(self.history, f)

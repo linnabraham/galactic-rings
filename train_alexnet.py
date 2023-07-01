@@ -13,7 +13,7 @@ class SaveHistoryCallback(Callback):
     def __init__(self, file_path):
         super().__init__()
         self.file_path = file_path
-        self.history = {'loss': [], 'val_loss': [], 'auc_pr':[], 'val_auc_pr':[]}
+        self.history = {'loss': [], 'val_loss': [], 'auc_pr':[], 'val_auc_pr':[], 'val_precision':[], 'val_recall':[]}
 
     def on_epoch_end(self, epoch, logs=None):
         self.history['loss'].append(logs.get('loss'))

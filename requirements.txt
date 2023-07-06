@@ -10,3 +10,4 @@ docopt
 fundamentals
 tqdm
 gdown
+tensorflow-addons

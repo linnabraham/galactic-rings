@@ -6,6 +6,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.callbacks import ModelCheckpoint, Callback, TensorBoard
+import tensorflow_addons as tfa
 from alexnet_utils.params import parser, print_arguments
 from alexnet_utils.alexnet import AlexNet
 
@@ -62,8 +63,7 @@ def augment_custom(images, labels, augmentation_types, seed):
     images, labels = rescale(images, labels)
     # Make a new seed.
     new_seed = tf.random.experimental.stateless_split((seed,seed), num=1)[0, :]
-    if 'rotation' in augmentation_types:
-        images = random_int_rot_img(images,seed=seed)
+
     if 'flip' in augmentation_types:
         images = tf.image.stateless_random_flip_left_right(images, seed=new_seed)
         images = tf.image.stateless_random_flip_up_down(images, seed=new_seed)
@@ -71,8 +71,26 @@ def augment_custom(images, labels, augmentation_types, seed):
         images = tf.image.stateless_random_brightness(images, max_delta=0.2, seed=new_seed)
     if 'contrast' in augmentation_types:
         images = tf.image.stateless_random_contrast(images, lower=0.2, upper=0.5, seed=new_seed)
+    if 'rotation' in augmentation_types:
+        #images = random_int_rot_img(images,seed=seed)
+        random_angle = tf.random.uniform(shape=[], minval=-180, maxval=180, dtype=tf.float32)
+        random_angle_rad = random_angle * (np.pi / 180)
+        images = tfa.image.rotate(images, random_angle_rad)
 
     return (images, labels)
+
+def images_to_disk(dataset, args):
+    augmentation_dir = "./augmented_images"
+    os.makedirs(augmentation_dir, exist_ok=True)
+    for epoch in range(args.epochs):
+        print("Epoch:", epoch+1)
+        # Iterate over the batches and save augmented images to disk
+        for i, (images, labels) in enumerate(dataset):
+            for j in range(images.shape[0]):
+                image = images[j]
+                filename = f"epoch_{epoch+1}_batch_{i+1}_image_{j+1}.jpg" 
+                save_path = os.path.join(augmentation_dir,filename)
+                tf.keras.preprocessing.image.save_img(save_path, image)
 
 if __name__=="__main__":
 
@@ -103,6 +121,7 @@ if __name__=="__main__":
       seed=random_state,
       image_size=target_size,
       batch_size=None)
+
 
     class_names = train_ds.class_names
     print("Training dataset class names are :",class_names)
@@ -150,6 +169,8 @@ if __name__=="__main__":
             .batch(batch_size)
             .prefetch(buffer_size=AUTOTUNE)
             )
+
+    #images_to_disk(train_ds, args)
 
     # save filenames also along with images and labels in the saved dataset
     def change_inputs(images, labels, paths):

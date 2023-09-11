@@ -112,22 +112,26 @@ if __name__=="__main__":
 
     # Compute other accuracy metrics
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve, \
-    balanced_accuracy_score
+    balanced_accuracy_score, brier_score_loss, average_precision_score, fbeta_score, matthews_corrcoef, auc, precision_recall_curve
 
     accuracy = accuracy_score(ground_truth, predicted_labels)
     precision = precision_score(ground_truth, predicted_labels)
     recall = recall_score(ground_truth, predicted_labels)
     f1 = f1_score(ground_truth, predicted_labels)
     roc_auc = roc_auc_score(ground_truth, predictions)
-    bal_acc = balanced_accuracy_score(ground_truth, predicted_labels)
-
+    precisions, recalls, thresholds = precision_recall_curve(ground_truth, predictions)
+    pr_auc = auc(recalls, precisions)
+    brier_score = brier_score_loss(ground_truth, predictions)
+    avg_precision = average_precision_score(ground_truth, predictions)
 
     print("Accuracy:", accuracy)
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1-score:", f1)
     print("ROC AUC Score:", roc_auc)
-    print("Balanced Accuracy:", bal_acc)
+    print("PR AUC Score:", pr_auc)
+    print("Brier score", brier_score)
+    print(f"Average precision score", avg_precision)
 
    # Automatically compute a classification threshold using the ROC in order to maximize the evaluation metrics
     false_pos_rate, true_pos_rate, proba = roc_curve(ground_truth, predictions)
@@ -139,20 +143,32 @@ if __name__=="__main__":
     recall_threshold = 0.75
     precision = precision_at_recall(np.array(ground_truth), predictions, recall_threshold)
     print(f"Precision at recall {recall_threshold}: {precision}")
-
     precision_threshold = 0.8
-
     recall = recall_at_precision(np.array(ground_truth), predictions, precision_threshold)
     print(f"Recall at precision {precision_threshold}: {recall}")
 
     confusion_mtx = confusion_matrix(ground_truth, roc_predictions)
     print("New Confusion Matrix:")
     print(confusion_mtx)
-
-    #print("Accuracy Score Before and After Thresholding:  {}".format(accuracy_score(y_test, predictions), accuracy_score(y_test, roc_predictions)))
-    print("Precision Score After Thresholding: {}".format( precision_score(ground_truth, roc_predictions)))
-    print("Recall Score After Thresholding: {}".format(recall_score(ground_truth, roc_predictions)))
+    print("Accuracy Score After Thresholding:  {}".format(accuracy_score(ground_truth, roc_predictions)))
+    tn, fp, fn, tp = confusion_mtx.ravel()
+    fpr = fp / (fp + tn)
+    specificity = tn / (fp + tn)
+    precision_score = precision_score(ground_truth, roc_predictions)
+    recall_score = recall_score(ground_truth, roc_predictions)
+    bal_acc = balanced_accuracy_score(ground_truth, roc_predictions)
+    matthews_corrcoef = matthews_corrcoef(ground_truth, roc_predictions)
+    beta = 2
+    fbeta = fbeta_score(ground_truth, roc_predictions, beta=beta)
+    print("False Positive Rate (FPR):", fpr)
+    print("TNR or Specificity:", specificity)
+    print("Precision Score After Thresholding: {}".format( precision_score))
+    print("Recall Score After Thresholding: {}".format(recall_score))
+    print("G-Mean:", np.sqrt(recall_score * specificity))
+    print(f"F-beta score beta={beta}", fbeta)
     print("F1 Score After Thresholding: {}".format( f1_score(ground_truth, roc_predictions)))
+    print("Matthew Correlation Coefficient:", matthews_corrcoef)
+    print("Balanced Accuracy:", bal_acc)
     if args.write:
 
         import csv

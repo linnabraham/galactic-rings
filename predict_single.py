@@ -45,7 +45,7 @@ def predict_image(model, input_path, args):
         print(f"Predictions:\n{prediction}")
 
 def predict_single_image(model, image_path, args):
-    img_array = get_image_array(img_path=image_path, target_size=args.targetsize)
+    img_array = get_image_array(img_path=image_path, target_size=args.target_size)
     predictions = model.predict(img_array)
     return predictions
 
@@ -56,7 +56,7 @@ if __name__=="__main__":
     args = parser.parse_args()
 
     # Load the pre-trained model
-    model = load_model(args.modelpath)
+    model = load_model(args.model_path)
     config = model.get_config() # Returns pretty much every information about your model
     print("Expected input shape for the model")
     print(config["layers"][0]["config"]["batch_input_shape"]) # returns a tuple of width, height and channels

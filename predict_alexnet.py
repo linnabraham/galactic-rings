@@ -7,6 +7,7 @@ if __name__=="__main__":
 
     from alexnet_utils.params import parser
     parser.add_argument('-pred_dir',  help="Directory containing images for prediction in a single sub-folder")
+    parser.add_argument('-threshold', type=float,  default=0.5, help="Decimal threshold to use for creating CM, etc.")
     args = parser.parse_args()
 
     modelpath = args.model_path
@@ -58,10 +59,12 @@ if __name__=="__main__":
     label_dict = {0: "NonRings", 1: "Rings"}
 
     # Decode predicted labels from indices to text labels
-    decoded_labels = [label_dict[np.argmax(pred)] for pred in predictions]
+    threshold = args.threshold
+    predicted_indices = [ 1 if pred >= threshold else 0 for pred in predictions]
+    decoded_labels = [label_dict[ind] for ind in predicted_indices]
 
     # Combine filename, second column of numpy array, and predicted labels
-    rows = [[filename, pred[1], label] for filename, pred, label in zip(filenames, predictions, decoded_labels)]
+    rows = [[filename, pred[0], label] for filename, pred, label in zip(filenames, predictions, decoded_labels)]
 
     # Save rows to a CSV file
     csv_filename = "pred_output.csv"

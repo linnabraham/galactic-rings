@@ -118,7 +118,11 @@ if __name__=="__main__":
     precision = precision_score(ground_truth, predicted_labels)
     recall = recall_score(ground_truth, predicted_labels)
     f1 = f1_score(ground_truth, predicted_labels)
-    roc_auc = roc_auc_score(ground_truth, predictions)
+    try:
+        roc_auc = roc_auc_score(ground_truth, predictions)
+    except:
+        print("Setting roc_auc to be -1 as it is not defined")
+        roc_auc = -1
     precisions, recalls, thresholds = precision_recall_curve(ground_truth, predictions)
     pr_auc = auc(recalls, precisions)
     brier_score = brier_score_loss(ground_truth, predictions)

@@ -25,7 +25,7 @@ if __name__=="__main__":
 
             print(f"Total no. of images found: {len(image_files)}")
 
-            sets = [ 900, 1200, 1500, 1800 ]
+            sets = [int(arg) for arg in sys.argv[2:]]
 
 
             for num in sets:

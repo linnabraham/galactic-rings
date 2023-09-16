@@ -153,7 +153,14 @@ if __name__=="__main__":
 
     AUTOTUNE = tf.data.AUTOTUNE
 
-    pos_ds = train_ds.filter(lambda x,y: y == 1)
+    # calculate an intial bias to apply based on the class imbalance in the training data
+    pos = train_ds.map(lambda _, label: tf.reduce_sum(label)).reduce(0, lambda count, val: count + val).numpy()
+    neg = train_ds.map(lambda _, label: tf.reduce_sum(1 - label)).reduce(0, lambda count, val: count + val).numpy()
+
+    print("Number of positive samples in training set", pos)
+    print("Number of negative samples in training set", neg)
+
+    pos_ds = train_ds.filter(lambda x,y: y == 1).repeat(np.ceil(neg/pos))
     neg_ds = train_ds.filter(lambda x,y: y == 0)
 
     train_ds = tf.data.Dataset.sample_from_datasets([pos_ds, neg_ds], weights=[0.5, 0.5])
@@ -185,12 +192,6 @@ if __name__=="__main__":
     path = os.path.join(outdir,"val_data")
     tf.data.Dataset.save(val_ds_todisk, path)
 
-    # calculate an intial bias to apply based on the class imbalance in the training data
-    pos = train_ds.map(lambda _, label: tf.reduce_sum(label)).reduce(0, lambda count, val: count + val).numpy()
-    neg = train_ds.map(lambda _, label: tf.reduce_sum(1 - label)).reduce(0, lambda count, val: count + val).numpy()
-
-    print("Number of positive samples in training set", pos)
-    print("Number of negative samples in training set", neg)
 
     initial_bias = np.log([pos/neg])
     print("[INFO] Calculated initial weight bias:", initial_bias)

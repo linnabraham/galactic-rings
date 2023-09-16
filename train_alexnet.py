@@ -181,8 +181,8 @@ if __name__=="__main__":
     tf.data.Dataset.save(val_ds_todisk, path)
 
     # calculate an intial bias to apply based on the class imbalance in the training data
-    pos = train_ds.map(lambda _, label: tf.reduce_sum(label)).reduce(0, lambda count, val: count + val).numpy()
-    neg = train_ds.map(lambda _, label: tf.reduce_sum(1 - label)).reduce(0, lambda count, val: count + val).numpy()
+    neg = train_ds.map(lambda _, label: tf.reduce_sum(label)).reduce(0, lambda count, val: count + val).numpy()
+    pos = train_ds.map(lambda _, label: tf.reduce_sum(1 - label)).reduce(0, lambda count, val: count + val).numpy()
 
     print("Number of positive samples in training set", pos)
     print("Number of negative samples in training set", neg)

@@ -216,8 +216,8 @@ if __name__=="__main__":
 
     start = time()
 
-    pos_ds = train_ds.filter(lambda x,y: y == 1)
-    neg_ds = train_ds.filter(lambda x,y: y == 0)
+    pos_ds = train_ds.unbatch().filter(lambda x,y: y == 1)
+    neg_ds = train_ds.unbatch().filter(lambda x,y: y == 0)
 
     resampled_ds = tf.data.Dataset.sample_from_datasets([pos_ds, neg_ds], weights=[0.5, 0.5])
     resampled_steps_per_epoch = np.ceil(2.0*pos/batch_size)

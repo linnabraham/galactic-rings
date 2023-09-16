@@ -122,6 +122,7 @@ if __name__=="__main__":
               seed=random_state,
               image_size=target_size,
               batch_size=None)
+
     class_names = train_ds.class_names
     print("Training dataset class names are :",class_names)
     
@@ -182,6 +183,10 @@ if __name__=="__main__":
     # calculate an intial bias to apply based on the class imbalance in the training data
     pos = train_ds.map(lambda _, label: tf.reduce_sum(label)).reduce(0, lambda count, val: count + val).numpy()
     neg = train_ds.map(lambda _, label: tf.reduce_sum(1 - label)).reduce(0, lambda count, val: count + val).numpy()
+
+    print("Number of positive samples in training set", pos)
+    print("Number of negative samples in training set", neg)
+
     initial_bias = np.log([pos/neg])
     print("[INFO] Calculated initial weight bias:", initial_bias)
 
@@ -211,6 +216,12 @@ if __name__=="__main__":
 
     start = time()
 
-    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard])
+    pos_ds = train_ds.filter(lambda x,y: y == 1)
+    neg_ds = train_ds.filter(lambda x,y: y == 0)
+
+    resampled_ds = tf.data.Dataset.sample_from_datasets([pos_ds, neg_ds], weights=[0.5, 0.5])
+    resampled_steps_per_epoch = np.ceil(2.0*pos/batch_size)
+
+    history = model.fit(resampled_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard], steps_per_epoch = resampled_steps_per_epoch)
 
     print("Total time taken for training: %d seconds" % (time()-start))

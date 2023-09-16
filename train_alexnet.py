@@ -153,6 +153,11 @@ if __name__=="__main__":
 
     AUTOTUNE = tf.data.AUTOTUNE
 
+    pos_ds = train_ds.filter(lambda x,y: y == 1)
+    neg_ds = train_ds.filter(lambda x,y: y == 0)
+
+    train_ds = tf.data.Dataset.sample_from_datasets([pos_ds, neg_ds], weights=[0.5, 0.5])
+
     train_ds = (
             train_ds
             .shuffle(1000)
@@ -216,12 +221,8 @@ if __name__=="__main__":
 
     start = time()
 
-    pos_ds = train_ds.unbatch().filter(lambda x,y: y == 1)
-    neg_ds = train_ds.unbatch().filter(lambda x,y: y == 0)
-
-    resampled_ds = tf.data.Dataset.sample_from_datasets([pos_ds, neg_ds], weights=[0.5, 0.5])
     resampled_steps_per_epoch = np.ceil(2.0*pos/batch_size)
 
-    history = model.fit(resampled_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard], steps_per_epoch = resampled_steps_per_epoch)
+    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard], steps_per_epoch = resampled_steps_per_epoch)
 
     print("Total time taken for training: %d seconds" % (time()-start))

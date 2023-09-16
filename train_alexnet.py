@@ -161,10 +161,10 @@ if __name__=="__main__":
     print("Number of negative samples in training set", neg)
 
     # repeat the smaller data set because resampling is done without replacement
-    pos_ds = train_ds.filter(lambda x,y: y == 1).repeat(np.ceil(neg/pos)*batch_size)
-    neg_ds = train_ds.filter(lambda x,y: y == 0)
+    pos_ds = train_ds.filter(lambda x,y: y == 1).repeat(batch_size)
+    neg_ds = train_ds.filter(lambda x,y: y == 0).repeat(batch_size)
 
-    train_ds = tf.data.Dataset.sample_from_datasets([pos_ds, neg_ds], weights=[0.5, 0.5])
+    train_ds = tf.data.Dataset.sample_from_datasets([pos_ds, neg_ds], weights=[0.5, 0.5], rerandomize_each_iteration=True)
 
     train_ds = (
             train_ds

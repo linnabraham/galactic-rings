@@ -161,14 +161,17 @@ if __name__=="__main__":
     print("Number of negative samples in training set", neg)
 
     # repeat the smaller data set because resampling is done without replacement
-    pos_ds = train_ds.filter(lambda x,y: y == 1).repeat(batch_size)
-    neg_ds = train_ds.filter(lambda x,y: y == 0).repeat(batch_size)
+    pos_ds = train_ds.filter(lambda x,y: y == 1)
+    neg_ds = train_ds.filter(lambda x,y: y == 0)
 
     train_ds = tf.data.Dataset.sample_from_datasets([pos_ds, neg_ds], weights=[0.5, 0.5], rerandomize_each_iteration=True)
+
+    resampled_steps_per_epoch = np.ceil(2.0*pos/batch_size)
 
     train_ds = (
             train_ds
             .shuffle(1000)
+            .repeat(batch_size)
             .map(lambda x, y: augment_custom(x, y, augmentation_types, seed=random_state), num_parallel_calls=AUTOTUNE)
             #.cache()
             .batch(batch_size)
@@ -223,7 +226,6 @@ if __name__=="__main__":
 
     start = time()
 
-    resampled_steps_per_epoch = np.ceil(2.0*pos/batch_size)
 
     history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard], steps_per_epoch = resampled_steps_per_epoch)
 

@@ -39,7 +39,7 @@ if __name__=="__main__":
 
     normalized_ds = test_ds.map(lambda images, labels: change_inputs(images, labels, paths=test_ds.file_paths))
     AUTOTUNE = tf.data.AUTOTUNE
-    normalized_ds = normalized_ds.cache().prefetch(buffer_size=AUTOTUNE)
+    #normalized_ds = normalized_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
     ground_truth = []
 

@@ -184,14 +184,14 @@ if __name__=="__main__":
         decoded_labels = [label_dict[label] for label in predicted_labels]
 
         # Combine filename, second column of numpy array, and predicted labels
-        rows = [[filename, pred[0], label] for filename, pred, label in zip(filenames, predictions, decoded_labels)]
+        rows = [[filename, pred[0], gt, label] for filename, pred, gt, label in zip(filenames, predictions, ground_truth, decoded_labels)]
 
         # Save rows to a CSV file
         csv_filename = "eval_output.csv"
 
         with open(csv_filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(["Filename", "Prediction", "Label"])  # Write header row
+            writer.writerow(["Filename", "Prediction", "Ground_Truth", "Label"])  # Write header row
             writer.writerows(rows)
 
  

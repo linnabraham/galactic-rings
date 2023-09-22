@@ -5,7 +5,7 @@ from sklearn.metrics import (precision_recall_curve,
                               PrecisionRecallDisplay)
 
 import matplotlib
-#matplotlib.use("Agg")
+plt.style.use("ggplot")
 #Filename,Prediction,Label
 
 if __name__=="__main__":

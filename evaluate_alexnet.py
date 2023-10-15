@@ -142,6 +142,10 @@ if __name__=="__main__":
     optimal_proba_cutoff = sorted(list(zip(np.abs(true_pos_rate - false_pos_rate), proba)), key=lambda i: i[0], reverse=True)[0][1]
     print("Optimal probability cutoff", optimal_proba_cutoff)
 
+    fscore = (2 * precisions * recalls) / (precisions + recalls)
+    ix = np.argmax(fscore)
+    print('Best Threshold=%f, F-Score=%.3f' % (thresholds[ix], fscore[ix]))
+
     roc_predictions = [1 if i >= optimal_proba_cutoff else 0 for i in predictions]
 
     recall_threshold = 0.75

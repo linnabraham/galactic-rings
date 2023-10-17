@@ -8,6 +8,10 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.callbacks import ModelCheckpoint, Callback, TensorBoard
 from alexnet_utils.params import parser, print_arguments
 from alexnet_utils.alexnet import AlexNet
+import wandb
+from wandb.keras import WandbCallback
+
+wandb.init(project="Ring_Train")
 
 class SaveHistoryCallback(Callback):
     def __init__(self, file_path):
@@ -211,6 +215,6 @@ if __name__=="__main__":
 
     start = time()
 
-    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard])
+    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard, WandbCallback()])
 
     print("Total time taken for training: %d seconds" % (time()-start))

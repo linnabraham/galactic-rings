@@ -39,8 +39,10 @@ fn = df['logloss'][(df.Ground_Truth==1) & (df.Prediction < threshold)]
 tn = df['logloss'][(df.Ground_Truth==0) & (df.Prediction < threshold)]
 fp = df['logloss'][(df.Ground_Truth==0) & (df.Prediction > threshold)]
 
-axes[0].hist(tn, bins=20, density=True, label='True Negatives')
-axes[1].hist(fn, bins=20, color='brown', density=True, label='False Negatives')
+# axes[0].hist(tn, bins=20, density=True, label='True Negatives')
+axes[0].hist(tn, bins=20, label='True Negatives')
+# axes[1].hist(fn, bins=20, color='brown', density=True, label='False Negatives')
+axes[1].hist(fn, bins=20, color='brown', label='False Negatives')
 axes[1].hist(tp, bins=20, label='True Positives')
 axes[1].hist(fp, bins=20, color='orange', label='False Positives')
 axes[0].set_xlabel("Logloss")

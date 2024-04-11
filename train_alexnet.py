@@ -215,6 +215,7 @@ if __name__=="__main__":
 
     start = time()
 
-    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard, WandbCallback()])
+    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs, shuffle=True, callbacks=[mc, hc, tensorboard, WandbCallback(save_model=(False),save_graph=(False))])
 
     print("Total time taken for training: %d seconds" % (time()-start))
+    wandb.finish()

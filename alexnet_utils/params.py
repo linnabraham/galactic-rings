@@ -22,9 +22,9 @@ def print_arguments(parser, args):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-images',  help="path containing images of two classes")
+parser.add_argument('-images', required=True, help="path containing images of two classes")
 parser.add_argument('-target_size', type=tuple_type, default=(240,240), help="target size to resize images to before training")
-parser.add_argument('-epochs', type=int, default=50, help="num epochs")
+parser.add_argument('-epochs', required=True, type=int, default=50, help="num epochs")
 parser.add_argument('-batch_size', type=int, default=16, help="batch size for training")
 parser.add_argument('-train_frac', type=float, default=0.80, help="fraction to use for the train sample")
 parser.add_argument('-random_state', type=int, default=42, help="seed for random processes for reproducibility")

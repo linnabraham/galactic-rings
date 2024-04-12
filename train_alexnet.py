@@ -11,8 +11,6 @@ from alexnet_utils.alexnet import AlexNet
 import wandb
 from wandb.keras import WandbCallback
 
-wandb.init(project="Ring_Train")
-
 class SaveHistoryCallback(Callback):
     def __init__(self, file_path):
         super().__init__()
@@ -79,30 +77,7 @@ def augment_custom(images, labels, augmentation_types, seed):
 
     return (images, labels)
 
-if __name__=="__main__":
-
-    parser.add_argument('-val_dir', default=None, help="path containing validation data")
-    parser.add_argument('-retrain', type=bool, default=False, help="Whether to continue previous training")
-    args = parser.parse_args()
-    print_arguments(parser,args)
-
-    data_dir = args.images
-    target_size = args.target_size
-    batch_size = args.batch_size
-    train_frac = args.train_frac
-    random_state = args.random_state
-    num_classes = args.num_classes
-    channels = args.channels
-    output = args.output_dir
-    epochs = args.epochs
-    model_path = args.model_path
-    augmentation_types = args.augmentation_types
-    val_dir = args.val_dir
-    # set the color_mode from the number of channels
-
-    #color_dict = {1:'grayscale',3:'rgb'}
-    #color_mode = color_dict[channels]
-
+def get_train_data(data_dir, val_dir, train_frac, target_size, batch_size, augmentation_types, outdir, random_state):
     if val_dir is None:
         train_ds, val_ds = tf.keras.utils.image_dataset_from_directory(
           data_dir,
@@ -126,33 +101,13 @@ if __name__=="__main__":
               seed=random_state,
               image_size=target_size,
               batch_size=None)
+
     class_names = train_ds.class_names
     print("Training dataset class names are :",class_names)
-    
     # set the num_classes automatically from the number of directories found  by the data generator
     #num_classes = len(class_names)
 
-
-    # create an output directory to hold saved model, training graphs etc.
-    pid, outdir = get_output_dir(output)
-    print(f"Outputs are saved to {outdir}")
-    os.makedirs(outdir)
-
-    # define callbacks
-    tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-    mc = ModelCheckpoint(model_path, monitor='val_auc_pr', \
-            mode='max', verbose=1, save_best_only=True)
-    history_path = os.path.join(outdir,'history.json')
-    hc = SaveHistoryCallback(history_path)
-
-    print(f"Saving filenames used for training and validation to disk...")
-
-    train_filenames = train_ds.file_paths
-    val_filenames = val_ds.file_paths
-
-    pd.DataFrame({"Filename":train_filenames}).to_csv(os.path.join(outdir,f"{pid}_train_filenames.csv"),index=False)
-    pd.DataFrame({"Filename":val_filenames}).to_csv(os.path.join(outdir,f"{pid}_validation_filenames.csv"),index=False)
-
+    train_ds_raw, val_ds_raw = train_ds, val_ds
 
     AUTOTUNE = tf.data.AUTOTUNE
 
@@ -173,6 +128,15 @@ if __name__=="__main__":
             .prefetch(buffer_size=AUTOTUNE)
             )
 
+    return train_ds_raw, val_ds_raw, train_ds, val_ds
+
+def save_filepaths(train_ds, val_ds, outdir):
+    train_filenames = train_ds.file_paths
+    val_filenames = val_ds.file_paths
+
+    pd.DataFrame({"Filename":train_filenames}).to_csv(os.path.join(outdir,f"train_filenames.csv"),index=False)
+    pd.DataFrame({"Filename":val_filenames}).to_csv(os.path.join(outdir,f"validation_filenames.csv"),index=False)
+
     # save filenames also along with images and labels in the saved dataset
     def change_inputs(images, labels, paths):
       return images, labels,  tf.constant(paths)
@@ -183,11 +147,62 @@ if __name__=="__main__":
     path = os.path.join(outdir,"val_data")
     tf.data.Dataset.save(val_ds_todisk, path)
 
+def calc_bias(train_ds):
     # calculate an intial bias to apply based on the class imbalance in the training data
     pos = train_ds.map(lambda _, label: tf.reduce_sum(label)).reduce(0, lambda count, val: count + val).numpy()
     neg = train_ds.map(lambda _, label: tf.reduce_sum(1 - label)).reduce(0, lambda count, val: count + val).numpy()
     initial_bias = np.log([pos/neg])
     print("[INFO] Calculated initial weight bias:", initial_bias)
+    return initial_bias
+
+def get_compiled_model():
+    classification_threshold = 0.5
+
+    METRICS = [
+          tf.keras.metrics.Precision(thresholds=classification_threshold,
+                                     name='precision'),
+          tf.keras.metrics.Recall(thresholds=classification_threshold,
+                                  name="recall"),
+          tf.keras.metrics.AUC(num_thresholds=100, curve='PR', name='auc_pr'),
+    ]
+
+    model = AlexNet.build(width=target_size[0], height=target_size[1], depth=channels, classes=1, reg=0.0002)
+
+
+    print("[INFO] compiling model...")
+    model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), metrics=METRICS)
+    return model
+
+if __name__=="__main__":
+
+    parser.add_argument('-val_dir', default=None, help="path containing validation data")
+    parser.add_argument('-retrain', type=bool, default=False, help="Whether to continue previous training")
+    args = parser.parse_args()
+    print_arguments(parser,args)
+
+    data_dir = args.images
+    target_size = args.target_size
+    batch_size = args.batch_size
+    train_frac = args.train_frac
+    random_state = args.random_state
+    num_classes = args.num_classes
+    channels = args.channels
+    output = args.output_dir
+    epochs = args.epochs
+    model_path = args.model_path
+    augmentation_types = args.augmentation_types
+    val_dir = args.val_dir
+
+    # set the color_mode from the number of channels
+
+    #color_dict = {1:'grayscale',3:'rgb'}
+    #color_mode = color_dict[channels]
+
+    # define an output directory to hold saved model, training graphs etc.
+    wandb.init(project="Ring_Train")
+    wandb_dir = wandb.run.name
+    outdir = os.path.join("output", wandb_dir)
+    print(f"Outputs are saved to {outdir}")
 
     if args.retrain:
 
@@ -197,21 +212,23 @@ if __name__=="__main__":
         else:
             print("Invalid model path....")
     else:
-        classification_threshold = 0.5
+        model = get_compiled_model()
 
-        METRICS = [
-              tf.keras.metrics.Precision(thresholds=classification_threshold,
-                                         name='precision'),
-              tf.keras.metrics.Recall(thresholds=classification_threshold,
-                                      name="recall"),
-              tf.keras.metrics.AUC(num_thresholds=100, curve='PR', name='auc_pr'),
-        ]
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
 
-        model = AlexNet.build(width=target_size[0], height=target_size[1], depth=channels, classes=1, reg=0.0002)
+    train_ds_raw, val_ds_raw , train_ds, val_ds = get_train_data(data_dir, val_dir, train_frac, target_size, batch_size, \
+            augmentation_types, outdir, random_state)
 
+    print(f"Saving filenames used for training and validation to disk...")
+    save_filepaths(train_ds_raw, val_ds_raw, outdir)
 
-        print("[INFO] compiling model...")
-        model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), metrics=METRICS)
+    # define callbacks
+    tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
+    mc = ModelCheckpoint(model_path, monitor='val_auc_pr', \
+            mode='max', verbose=1, save_best_only=True)
+    history_path = os.path.join(outdir,'history.json')
+    hc = SaveHistoryCallback(history_path)
 
     start = time()
 

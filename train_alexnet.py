@@ -175,6 +175,9 @@ def get_compiled_model():
 
 if __name__=="__main__":
 
+    parser.add_argument('-images', required=True, help="path containing images of two classes")
+    parser.add_argument('-epochs', required=True, type=int, default=50, help="num epochs")
+    parser.add_argument('-model_path', default=None, help="Filepath to save model during training and to load model from when testing")
     parser.add_argument('-val_dir', default=None, help="path containing validation data")
     parser.add_argument('-retrain', type=bool, default=False, help="Whether to continue previous training")
     args = parser.parse_args()
@@ -213,6 +216,9 @@ if __name__=="__main__":
             print("Invalid model path....")
     else:
         model = get_compiled_model()
+
+    if model_path is None:
+        model_path = os.path.join(outdir,"best_model.h5")
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)

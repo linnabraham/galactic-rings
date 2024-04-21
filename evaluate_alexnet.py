@@ -51,6 +51,7 @@ def recall_at_precision(y_true, y_scores, precision_threshold):
 if __name__=="__main__":
 
     from alexnet_utils.params import parser
+    parser.add_argument('-model_path', required=True, help="Path to trained model")
     parser.add_argument('-test_dir',  help="Directory containing validation or test images sorted into respective classes")
     parser.add_argument('-saved_ds',  default=False, help="Boolean flag that is true if test_dir points to a tf.data.Dataset object")
     parser.add_argument('-threshold', type=float,  default=0.5, help="Decimal threshold to use for creating CM, etc.")

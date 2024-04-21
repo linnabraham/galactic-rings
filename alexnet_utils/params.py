@@ -22,16 +22,13 @@ def print_arguments(parser, args):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-images', required=True, help="path containing images of two classes")
 parser.add_argument('-target_size', type=tuple_type, default=(240,240), help="target size to resize images to before training")
-parser.add_argument('-epochs', required=True, type=int, default=50, help="num epochs")
 parser.add_argument('-batch_size', type=int, default=16, help="batch size for training")
 parser.add_argument('-train_frac', type=float, default=0.80, help="fraction to use for the train sample")
 parser.add_argument('-random_state', type=int, default=42, help="seed for random processes for reproducibility")
 parser.add_argument('-num_classes', type=int, default=2, help="Number of classes")
 parser.add_argument('-channels', type=int, default=3, help="Number of channels in the image data")
 parser.add_argument('-output_dir', default="output", help="Location to store the outputs generated during training")
-parser.add_argument('-model_path', default="best_model.h5", help="Filepath to save model during training and to load model from when testing")
 parser.add_argument('-augmentation_types', nargs='+', type=str, default=['flip', 'rotation'], choices=['brightness', 'contrast', 'rotation', 'flip', 'None'],
                     help='Types of augmentation: brightness, contrast')
 

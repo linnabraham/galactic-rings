@@ -83,8 +83,11 @@ def plot_pr_curve(precision, recall, threshold, noskill, pr_auc):
     plt.savefig(figname)
     plt.close()
 
-def show_montage_fn(filenames, ground_truth, predicted_labels):
-
+def plot_FN_montage(filenames, ground_truth, predicted_labels):
+    """
+    Generate a mosaic of the False Negatives and
+    Save the figure to disk using a random string
+    """
     predicted_labels = [1 if pred >= threshold else 0 for pred in predictions] 
     fn_indices = [ i for i, (true, pred) in enumerate(zip(ground_truth, predicted_labels)) 
                   if true == 1 and pred == 0 ]
@@ -97,7 +100,9 @@ def show_montage_fn(filenames, ground_truth, predicted_labels):
     plt.imshow(montage_image)
     plt.axis('off')
     plt.title('False Negative Images')
-    plt.show()
+    figname =  f"montage_{next(tempfile._get_candidate_names())}.png"
+    plt.savefig(figname, bbox_inches="tight")
+    plt.close()
 
 if __name__=="__main__":
 
@@ -153,7 +158,6 @@ if __name__=="__main__":
     print("Using a classification threshold", threshold)
 
     predicted_labels = np.argmax(predictions, axis=1)
-    show_montage_fn(filenames, ground_truth, predictions)
 
     # Compute the confusion matrix
     from sklearn.metrics import confusion_matrix

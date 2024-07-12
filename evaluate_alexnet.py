@@ -2,6 +2,10 @@ import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.models import load_model
 import numpy as np
+import tempfile
+from skimage import io
+from skimage.util import montage
+import matplotlib.pyplot as plt
 
 def load_dataset(dataset):
     test_ds = tf.data.Dataset.load(dataset)
@@ -47,6 +51,53 @@ def recall_at_precision(y_true, y_scores, precision_threshold):
     
     # Return the recall at the specified precision threshold
     return recall[index]
+
+def plot_pr_curve(precision, recall, threshold, noskill, pr_auc):
+    """
+    Function to plot PR curve with selected thresholds annotated
+    without duplication or overlap
+    Saves figure to current directory using a random string
+    """
+
+    plt.plot(recall, precision, color='darkorange', label=f"PR curve (area = {pr_auc:.3f})")
+    plt.plot([0,1], [noskill, noskill], color='navy', lw=2, linestyle='--', label='No Skill')
+    plt.legend(loc='lower left', bbox_to_anchor=(0.00, 0.05))
+
+    specific_thresholds = [0.01, 0.1, 0.2, 0.3, 0.5, 0.8, 0.9, 0.95]
+    sel_indices = [np.argmin(np.abs(threshold - t)) for t in specific_thresholds]
+
+    annotated_indices = set()
+    min_distance = 0.05
+
+    for i in sel_indices:
+        if all(np.sqrt((recall[i] - recall[j])**2 + (precision[i] - precision[j])**2) > min_distance for j in annotated_indices):
+            print(i, recall[i], precision[i], threshold[i])
+            annotated_indices.add(i)
+            plt.annotate(f'{threshold[i]:.2f}', (recall[i], precision[i]), xycoords='data', textcoords='data')
+
+    figname =  f"pr_curve_{next(tempfile._get_candidate_names())}.png"
+    print("Saving PR curve as", figname)
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.title("PR curve for the test set")
+    plt.savefig(figname)
+    plt.close()
+
+def show_montage_fn(filenames, ground_truth, predicted_labels):
+
+    predicted_labels = [1 if pred >= threshold else 0 for pred in predictions] 
+    fn_indices = [ i for i, (true, pred) in enumerate(zip(ground_truth, predicted_labels)) 
+                  if true == 1 and pred == 0 ]
+    fn_filenames = [filenames[i] for i in fn_indices]
+    fn_images = [io.imread(filename) for filename in fn_filenames]
+    montage_image = montage(np.array(fn_images), channel_axis=3)
+
+    # Plot the montage
+    plt.figure(figsize=(10, 10))
+    plt.imshow(montage_image)
+    plt.axis('off')
+    plt.title('False Negative Images')
+    plt.show()
 
 if __name__=="__main__":
 
@@ -101,8 +152,8 @@ if __name__=="__main__":
     threshold = args.threshold
     print("Using a classification threshold", threshold)
 
-    #predicted_labels = np.argmax(predictions, axis=1)
-    predicted_labels = [1 if pred >= threshold else 0 for pred in predictions] 
+    predicted_labels = np.argmax(predictions, axis=1)
+    show_montage_fn(filenames, ground_truth, predictions)
 
     # Compute the confusion matrix
     from sklearn.metrics import confusion_matrix
@@ -126,6 +177,8 @@ if __name__=="__main__":
         roc_auc = -1
     precisions, recalls, thresholds = precision_recall_curve(ground_truth, predictions)
     pr_auc = auc(recalls, precisions)
+    noskill = ground_truth.count(1)/len(ground_truth)
+    plot_pr_curve(precisions, recalls, thresholds, noskill, pr_auc)
     brier_score = brier_score_loss(ground_truth, predictions)
     avg_precision = average_precision_score(ground_truth, predictions)
 

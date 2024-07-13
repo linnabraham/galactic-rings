@@ -231,8 +231,8 @@ if __name__=="__main__":
 
     # define callbacks
     tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-    mc = ModelCheckpoint(model_path, monitor='val_auc_pr', \
-            mode='max', verbose=1, save_best_only=True)
+    mc = ModelCheckpoint(model_path, monitor='val_loss', \
+            mode='min', verbose=1, save_best_only=True)
     history_path = os.path.join(outdir,'history.json')
     hc = SaveHistoryCallback(history_path)
 

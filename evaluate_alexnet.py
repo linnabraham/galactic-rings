@@ -168,7 +168,8 @@ if __name__=="__main__":
 
     # Compute other accuracy metrics
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve, \
-    balanced_accuracy_score, brier_score_loss, average_precision_score, fbeta_score, matthews_corrcoef, auc, precision_recall_curve
+    balanced_accuracy_score, brier_score_loss, average_precision_score, fbeta_score, matthews_corrcoef, auc, precision_recall_curve, \
+    classification_report
 
     accuracy = accuracy_score(ground_truth, predicted_labels)
     precision = precision_score(ground_truth, predicted_labels)
@@ -181,11 +182,9 @@ if __name__=="__main__":
         roc_auc = -1
     precisions, recalls, thresholds = precision_recall_curve(ground_truth, predictions)
     pr_auc = auc(recalls, precisions)
-    noskill = ground_truth.count(1)/len(ground_truth)
-    plot_pr_curve(precisions, recalls, thresholds, noskill, pr_auc)
     brier_score = brier_score_loss(ground_truth, predictions)
     avg_precision = average_precision_score(ground_truth, predictions)
-
+    report = classification_report(ground_truth, predicted_labels, target_names=['NonRings', 'Rings'])
     print("Accuracy:", accuracy)
     print("Precision:", precision)
     print("Recall:", recall)
@@ -193,7 +192,10 @@ if __name__=="__main__":
     print("ROC AUC Score:", roc_auc)
     print("PR AUC Score:", pr_auc)
     print("Brier score", brier_score)
-    print(f"Average precision score", avg_precision)
+    print("Average precision score", avg_precision)
+    print("Classification Report")
+    print(report)
+    
 
    # Automatically compute a classification threshold using the ROC in order to maximize the evaluation metrics
     false_pos_rate, true_pos_rate, proba = roc_curve(ground_truth, predictions)

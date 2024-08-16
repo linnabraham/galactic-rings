@@ -71,7 +71,6 @@ def plot_pr_curve(precision, recall, threshold, noskill, pr_auc):
 
     for i in sel_indices:
         if all(np.sqrt((recall[i] - recall[j])**2 + (precision[i] - precision[j])**2) > min_distance for j in annotated_indices):
-            print(i, recall[i], precision[i], threshold[i])
             annotated_indices.add(i)
             plt.annotate(f'{threshold[i]:.2f}', (recall[i], precision[i]), xycoords='data', textcoords='data')
 
@@ -88,7 +87,7 @@ def plot_FN_montage(filenames, ground_truth, predicted_labels):
     Generate a mosaic of the False Negatives and
     Save the figure to disk using a random string
     """
-    predicted_labels = [1 if pred >= threshold else 0 for pred in predictions] 
+    predicted_labels = [1 if pred >= args.threshold else 0 for pred in predictions] 
     fn_indices = [ i for i, (true, pred) in enumerate(zip(ground_truth, predicted_labels)) 
                   if true == 1 and pred == 0 ]
     fn_filenames = [filenames[i] for i in fn_indices]
@@ -151,13 +150,12 @@ if __name__=="__main__":
         labels = test_ds.unbatch().map(lambda _, label: label)
 
     ground_truth = list(labels.as_numpy_iterator())
-
     predictions = model.predict(test_ds)
 
     threshold = args.threshold
     print("Using a classification threshold", threshold)
 
-    predicted_labels = np.argmax(predictions, axis=1)
+    predicted_labels = [1 if pred >= threshold else 0 for pred in predictions]
 
     # Compute the confusion matrix
     from sklearn.metrics import confusion_matrix

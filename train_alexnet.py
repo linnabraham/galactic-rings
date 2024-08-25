@@ -174,6 +174,8 @@ def get_compiled_model():
     return model
 
 if __name__=="__main__":
+    gpu = tf.config.experimental.list_physical_devices('GPU')[0]
+    tf.config.experimental.set_memory_growth(gpu, True)
 
     parser.add_argument('-images', required=True, help="path containing images of two classes")
     parser.add_argument('-epochs', required=True, type=int, default=50, help="num epochs")

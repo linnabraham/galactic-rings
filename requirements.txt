@@ -1,0 +1,4 @@
+tensorflow
+wandb
+pillow
+matplotlib

@@ -1,0 +1,10 @@
+dependencies:
+    - pip:
+        - docopt
+        - fundamentals
+        - tqdm
+        - scikit-image
+        - scikit-learn
+        - scipy
+        - requests
+        - pandas
